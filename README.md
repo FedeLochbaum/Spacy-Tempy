@@ -7,7 +7,7 @@ Con está práctica aprendimos un poco más acerca de la estructura y reglas del
 
 
 ## Preguntas
- ###### -- 3. El ejercicio
+ ######  3. El ejercicio
   1. ¿Cuántos requests por segundo podemos servir? 
         Aproximadamente de 25 a 30.
 
@@ -17,14 +17,14 @@ Con está práctica aprendimos un poco más acerca de la estructura y reglas del
 *Reporte de tiempos entre cliete-servidor del módulo Test.*
 | Tiempo (segundos) |
 | :------: |
-| 0.035  | 
-| 0.040  | 
-| 0.828  | 
-| 0.840  | 
-| 0.953  |
-| 1.032  | 
+| 0.035 | 
+| 0.040 | 
+| 0.828 | 
+| 0.840 | 
+| 0.953 |
+| 1.032 | 
 
- ###### -- 4.1 Incrementando el rendimiento
+ ######  4.1 Incrementando el rendimiento
   3. ¿Qué ocurre si ejecutamos los benchmarks en varias máquinas al mismo tiempo?
         Se ejecuta correctamente pero si se nota un tiempo de espera no muy adecuado, esto puede ser debido a diferentes factores como: la red en la que están conectados, el procesamiento del servidor.
 
@@ -38,6 +38,6 @@ Con está práctica aprendimos un poco más acerca de la estructura y reglas del
 minuto?
         El servidor pone en cola de espera todos los request que están procesados.
 
- ###### -- 4.2 Parseo HTTP
+ ######  4.2 Parseo HTTP
  7. ¿Cómo sabremos el tamaño del cuerpo?
     
