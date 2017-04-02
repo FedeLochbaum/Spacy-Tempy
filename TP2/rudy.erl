@@ -3,17 +3,18 @@
 -import(http,[parse_request/1,ok/1]).
 
 -define(Pids, []).
+%erl -smp enable
 
 
 start(Port,NUM) ->
   register(rudy, spawn(fun() -> init(Port,NUM) end)).
 
 stop() ->
-  rudy ! close.
+  rudy ! {'HOLA','HOLA2'}.
   %exit(whereis(rudy), "time to die").
-
+  
 abort() -> receive
-  close -> abortPids(?Pids)
+  _ -> abortPids(?Pids)
 end.
 
 

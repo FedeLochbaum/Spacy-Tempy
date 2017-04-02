@@ -1,5 +1,5 @@
 -module(http).
--export([parse_request/1,ok/1,get/1]).
+-export([parse_request/1,ok/1,get/1,countCRLFforRequest/1,checkRequest/1]).
 
 ok(Body) ->
   "HTTP/1.1 200 OK\r\n" ++ "\r\n" ++ Body.
@@ -7,10 +7,31 @@ get(URI) ->
   "GET " ++ URI ++ " HTTP/1.1\r\n" ++ "\r\n".
 
 parse_request(R0) ->
+  checkRequest(R0),
   {Request, R1} = request_line(R0),
   {Headers, R2} = headers(R1),
   {Body, _} = message_body(R2),
   {Request, Headers, Body}.
+
+checkRequest(RO) ->
+  case countCRLFforRequest(RO) of
+    2 ->
+      ok;
+    _ ->
+      waitForOtherRequest(RO)
+  end.
+
+
+countCRLFforRequest([_]) ->
+  0;
+countCRLFforRequest([$C,$R, $L, $F, 32 |R0]) ->
+  1 + countCRLFforRequest(R0);
+countCRLFforRequest([_|R0]) ->
+  countCRLFforRequest(R0).
+
+waitForOtherRequest(R0) -> receive
+    Nrequest -> parse_request(R0 ++ Nrequest)
+end.
 
 
 request_line([$G, $E, $T, 32 |R0]) ->
