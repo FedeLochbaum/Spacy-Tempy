@@ -17,7 +17,7 @@ recursiveFunction(N) ->
         {ping, M} ->
             case M==N of
                 true ->
-                    io:format("M: ~p",M),
+                    io:format("The number is: ~p",[M]),
                     recursiveFunction(N+1);
                 false ->
                     case M>N of
