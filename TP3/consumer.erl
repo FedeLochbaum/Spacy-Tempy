@@ -15,19 +15,12 @@ init(producer) ->
 recursiveFunction(N) ->
     receive
         {ping, M} ->
-            case M==N of
-                true ->
-                    io:format("The number is: ~p",[M]),
-                    recursiveFunction(N+1);
-                false ->
-                    case M>N of
-                        true ->
-                            io:format(warning),
-                            recursiveFunction(M+1);
-                        false ->
-                            io:format("Error !")
-                    end
-              end;
+            if
+              M==N -> io:format("The number is: ~p",[M]);
+              M>N  -> io:format(warning);
+              true -> io:format("Error !")
+            end,
+              recursiveFunction(M+1);
          bye ->
               stop()
     end.
