@@ -1,33 +1,38 @@
-# TP3 Detección de fallas en Erlang
+# TP3 Detecciï¿½n de fallas en Erlang
 
 
-El TP es un pasaje de mensajes, donde se muestra el incremento de un contador respecto a un delay de tiempo. Además de observar que el envió de mensajes no garantiza que se reciba correctamente.
+El TP es un pasaje de mensajes, donde se muestra el incremento de un contador respecto a un delay de tiempo. Ademï¿½s de observar que el enviï¿½ de mensajes no garantiza que se reciba correctamente.
 
-Se utilizan 2 módulos:
+Se utilizan 2 mï¿½dulos:
 
-- Producer: Este módulo creara un nuevo proceso producer registrándolo con el nombre de "producer", el cual esperara un mensaje del "consumer". Cuando esto suceda el producer interactuara con el consumer, enviándole números sucesivos por cada uno de los mensajes. En caso de que haya un mensaje STOP desde el consumer, el producer le avisara con un "bye" que la conversación finalizó. Por otro lado, si ocurre un crash no tendrá tiempo para avisarle al consumer.
+- Producer: Este mï¿½dulo creara un nuevo proceso producer registrï¿½ndolo con el nombre de "producer", el cual esperara un mensaje del "consumer". Cuando esto suceda el producer interactuara con el consumer, enviï¿½ndole nï¿½meros sucesivos por cada uno de los mensajes. En caso de que haya un mensaje STOP desde el consumer, el producer le avisara con un "bye" que la conversaciï¿½n finalizï¿½. Por otro lado, si ocurre un crash no tendrï¿½ tiempo para avisarle al consumer.
 
-- Consumer: Este módulo, a diferencia del Producer, creara un proceso consumer pasándole como parametro al producer con el que entablara la conversación. Una vez instanciado le enviara al producer un mensaje "hello" para comenzar el envío de mensajes simultaneo. El consumer revisara cada uno de los mensajes enviados por el producer e imprimirá un string distinto dependiendo el resultado. Además, sabra como finalizar su envío de mensajes cuando el producer lo notifique. En el caso de que el producer haga crash, el consumer tendrá un cierto tiempo de tolerancia antes de finalizar.
+- Consumer: Este mï¿½dulo, a diferencia del Producer, creara un proceso consumer pasï¿½ndole como parametro al producer con el que entablara la conversaciï¿½n. Una vez instanciado le enviara al producer un mensaje "hello" para comenzar el envï¿½o de mensajes simultaneo. El consumer revisara cada uno de los mensajes enviados por el producer e imprimirï¿½ un string distinto dependiendo el resultado. Ademï¿½s, sabra como finalizar su envï¿½o de mensajes cuando el producer lo notifique. En el caso de que el producer haga crash, el consumer tendrï¿½ un cierto tiempo de tolerancia antes de finalizar.
 
 ### 3.1. En el mismo host
-	1. ¿Qué mensaje se da como razón cuando el nodo es terminado? ¿Por qué?
-		Se termina correctamente, porque se hace referencia correcta al proceso Producer, por lo tanto están bien sincronizados los procesos.
+#### ï¿½Quï¿½ mensaje se da como razï¿½n cuando el nodo es terminado? ï¿½Por quï¿½?
+Aunque esten en diferentes nodos, si el producer es finalizado por medio de un stop(), el consumer recibe el mensaje y finaliza correctamente.
+De otra manera, si el producer es finalizado mediante un crash, el mensaje obtenido por el consumer es:
+	1. "died; {badarith,[{producer,producer,3,[{file,[112,114,111,100,117,99,101,114,46,101,114,108]},{line,27}]}]}".
+Pero, si el nodo donde corre el consumer es finalizado con una excepcion de sistema, el mensaje obtenido por el consumer es:
+	2. "died; noconnection".
+Es decir que se perdio la conexion entre nodos.
 
 ### 3.2. Un experimento distribuido
-	1. ¿Qué sucede si matamos el nodo Erlang en el producer?
+	1. ï¿½Quï¿½ sucede si matamos el nodo Erlang en el producer?
 		El proceso Consumer muere.
 
-	2. Ahora probemos desconectar el cable de red de la máquina corriendo el producer y volvamos a enchufarlo despues de unos segundos. ¿Qué pasa?
-		El proceso Consumer muere porque no hay conexión con el Producer.
+	2. Ahora probemos desconectar el cable de red de la mï¿½quina corriendo el producer y volvamos a enchufarlo despues de unos segundos. ï¿½Quï¿½ pasa?
+		El proceso Consumer muere porque no hay conexiï¿½n con el Producer.
 
-	3. Desconectemos el cable por períodos mas largos. ¿Qué pasa ahora?
-		Igual que el punto anterior, el proceso Consumer muere por falta de conexión con el proceso Producer.
+	3. Desconectemos el cable por perï¿½odos mas largos. ï¿½Quï¿½ pasa ahora?
+		Igual que el punto anterior, el proceso Consumer muere por falta de conexiï¿½n con el proceso Producer.
 
-	4. ¿Qué significa haber recibido un mensaje ’DOWN’? ¿Cuándo debemos confiar en el?
-		No se recibió.
+	4. ï¿½Quï¿½ significa haber recibido un mensaje ï¿½DOWNï¿½? ï¿½Cuï¿½ndo debemos confiar en el?
+		No se recibiï¿½.
 
-	5. ¿Se recibieron mensajes fuera de orden, aun sin haber recibido un mensaje ’DOWN’?
+	5. ï¿½Se recibieron mensajes fuera de orden, aun sin haber recibido un mensaje ï¿½DOWNï¿½?
 		No.
 
-	6. ¿Qué dice el manual acerca de las garantías de envíos de mensajes?
-		Se envía el mensaje pero no hay garantía en que llegue.
+	6. ï¿½Quï¿½ dice el manual acerca de las garantï¿½as de envï¿½os de mensajes?
+		Se envï¿½a el mensaje pero no hay garantï¿½a en que llegue.

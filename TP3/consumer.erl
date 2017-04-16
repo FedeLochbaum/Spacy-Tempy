@@ -1,7 +1,7 @@
 -module(consumer).
 -export([start/1, stop/0, init/1, consumer/2]).
 
-start(Producer) ->
+  start(Producer) ->
     Consumer = spawn(fun() -> init(Producer) end),
     register(consumer, Consumer).
 
@@ -21,7 +21,8 @@ consumer(N,Monitor) ->
               M>N  -> io:format(warning);
               true -> io:format("Error !")
             end,
-              consumer(M+1,Monitor);
+              consumer(M+1,Monitor),
+              io:format("adios producer, att: consumer ");
          bye ->
               stop();
         {'DOWN', Monitor, process, Object, Info} ->
