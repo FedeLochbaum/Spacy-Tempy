@@ -24,6 +24,7 @@ producer(Consumer, N, Delay) ->
         stop ->
             Consumer ! bye;
         crash ->
+            io:format("CRASHEEE"),
             42/0 %% this will give you a warning, but it is ok
     after Delay ->
         Consumer ! {ping, N},
