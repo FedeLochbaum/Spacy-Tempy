@@ -1,4 +1,4 @@
-# TP3 Deteccion de fallas en Erlang
+﻿# TP3 Deteccion de fallas en Erlang
 
 
 El TP es un pasaje de mensajes, donde se muestra el incremento de un contador respecto a un delay de tiempo. Ademas de observar que el envia de mensajes no garantiza que se reciba correctamente.
@@ -23,20 +23,20 @@ Pero, si el nodo donde corre el consumer es finalizado con una excepcion de sist
 Es decir que se perdio la conexion entre nodos.
 
 ### 3.2. Un experimento distribuido
-	1. ¿Que sucede si matamos el nodo Erlang en el producer?
-		El proceso Consumer muere.
+#### 1. ¿Que sucede si matamos el nodo Erlang en el producer?
+El proceso Consumer muere normal, esto debido a que se perdió la conexión con el otro equipo.
 
-	2. Ahora probemos desconectar el cable de red de la maquina corriendo el producer y volvamos a enchufarlo despues de unos segundos. ¿Que pasa?
-		El proceso Consumer muere porque no hay conexion con el Producer.
+#### 2. Ahora probemos desconectar el cable de red de la maquina corriendo el producer y volvamos a enchufarlo despues de unos segundos. ¿Que pasa?
+El proceso Consumer espera la respuesta del Producer, cuando se vuelve a conectar sigue mostrando el mensaje.
 
-	3. Desconectemos el cable por periodos mas largos. ¿Que pasa ahora?
-		Igual que el punto anterior, el proceso Consumer muere por falta de conexion con el proceso Producer.
+#### 3. Desconectemos el cable por periodos mas largos. ¿Que pasa ahora?
+El Consumer sigue mostrando el mensaje, no muere.
 
-	4. ¿Que significa haber recibido un mensaje 'DOWN'? ¿Cuando debemos confiar en el?
-		No se recibio.
+#### 4. ¿Que significa haber recibido un mensaje 'DOWN'? ¿Cuando debemos confiar en el?
+No se recibió.
 
-	5. ¿Se recibieron mensajes fuera de orden, aun sin haber recibido un mensaje 'DOWN'?
-		No.
+#### 5. ¿Se recibieron mensajes fuera de orden, aun sin haber recibido un mensaje 'DOWN'?
+No se recibieron mensajes fuera de orden.
 
-	6. ¿Que dice el manual acerca de las garantias de envios de mensajes?
-		Se envia el mensaje pero no hay garantia en que llegue.
+#### 6. ¿Que dice el manual acerca de las garantias de envios de mensajes?
+Se envia el mensaje pero no hay garantia en que llegue.
