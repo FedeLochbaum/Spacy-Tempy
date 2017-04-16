@@ -10,12 +10,16 @@ Se utilizan 2 modulos:
 - Consumer: Este modulo, a diferencia del Producer, creara un proceso consumer pasandole como parametro al producer con el que entablara la conversacion. Una vez instanciado le enviara al producer un mensaje "hello" para comenzar el envio de mensajes simultaneo. El consumer revisara cada uno de los mensajes enviados por el producer e imprimira un string distinto dependiendo el resultado. Ademas, sabra como finalizar su envio de mensajes cuando el producer lo notifique. En el caso de que el producer haga crash, el consumer tendra un cierto tiempo de tolerancia antes de finalizar.
 
 ### 3.1. En el mismo host
-#### ¿Que mensaje se da como raz�n cuando el nodo es terminado? ¿Por que?
+#### ¿Que mensaje se da como razon cuando el nodo es terminado? ¿Por que?
 Aunque esten en diferentes nodos, si el producer es finalizado por medio de un stop(), el consumer recibe el mensaje y finaliza correctamente.
 De otra manera, si el producer es finalizado mediante un crash, el mensaje obtenido por el consumer es:
-	1. "died; {badarith,[{producer,producer,3,[{file,[112,114,111,100,117,99,101,114,46,101,114,108]},{line,27}]}]}".
+
+``` "died; {badarith,[{producer,producer,3,[{file,[112,114,111,100,117,99,101,114,46,101,114,108]},{line,27}]}]}". ```
+
 Pero, si el nodo donde corre el consumer es finalizado con una excepcion de sistema, el mensaje obtenido por el consumer es:
-	2. "died; noconnection".
+
+```"died; noconnection". ```
+
 Es decir que se perdio la conexion entre nodos.
 
 ### 3.2. Un experimento distribuido
@@ -25,8 +29,8 @@ Es decir que se perdio la conexion entre nodos.
 	2. Ahora probemos desconectar el cable de red de la maquina corriendo el producer y volvamos a enchufarlo despues de unos segundos. ¿Que pasa?
 		El proceso Consumer muere porque no hay conexion con el Producer.
 
-	3. Desconectemos el cable por per�odos mas largos. ¿Que pasa ahora?
-		Igual que el punto anterior, el proceso Consumer muere por falta de conexi�n con el proceso Producer.
+	3. Desconectemos el cable por periodos mas largos. ¿Que pasa ahora?
+		Igual que el punto anterior, el proceso Consumer muere por falta de conexion con el proceso Producer.
 
 	4. ¿Que significa haber recibido un mensaje 'DOWN'? ¿Cuando debemos confiar en el?
 		No se recibio.
