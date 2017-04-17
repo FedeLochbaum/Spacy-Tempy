@@ -1,4 +1,4 @@
-﻿# TP3 Deteccion de fallas en Erlang
+# TP3 Deteccion de fallas en Erlang
 
 
 El TP es un pasaje de mensajes, donde se muestra el incremento de un contador respecto a un delay de tiempo. Ademas de observar que el envia de mensajes no garantiza que se reciba correctamente.
@@ -24,19 +24,31 @@ Es decir que se perdio la conexion entre nodos.
 
 ### 3.2. Un experimento distribuido
 #### 1. ¿Que sucede si matamos el nodo Erlang en el producer?
-El proceso Consumer muere normal, esto debido a que se perdió la conexión con el otro equipo.
+Utilizando los nodos desde diferentes computadoras.Si el producer es finalizado matando su nodo, el consumer devuelve la siguiente respuesta:
+
+```"{producer, silver@192.168.183.129} died; noconnection". ```
+
+Claramente puede verse que a diferencia del punto anterior, este especifica el nodo finalizado.
 
 #### 2. Ahora probemos desconectar el cable de red de la maquina corriendo el producer y volvamos a enchufarlo despues de unos segundos. ¿Que pasa?
-El proceso Consumer espera la respuesta del Producer, cuando se vuelve a conectar sigue mostrando el mensaje.
+En este caso el proceso consumer se queda esperando la respuesta del producer, cuando este vuelve a conectarse se reestablece el envio de mensajes y continuan interactuando.
 
 #### 3. Desconectemos el cable por periodos mas largos. ¿Que pasa ahora?
-El Consumer sigue mostrando el mensaje, no muere.
+En un principio la conexion se reestablece, pero al desconectarlo por mas de 20 segundos, es consumer deja de esperar al producer e imprime el mismo mensaje de error que cuando se mataba el nodo:
+
+```"{producer, silver@192.168.183.129} died; noconnection". ```
+
+Y el producer:
+
+```"Node 'gold@192.168.43.236' not responding".```
+
+```"Removing (timedout) connection"```
 
 #### 4. ¿Que significa haber recibido un mensaje 'DOWN'? ¿Cuando debemos confiar en el?
-No se recibió.
+Haber recibido el mensaje 'DOWN' significa que la conexion con otro nodo se perdio y no puede ser recuperada. Cuando desconectabamos el producer por un periodo de tiempo corto, la conexion se retomaba sin haber imprimido mensaje alguno desde el consumer.
 
 #### 5. ¿Se recibieron mensajes fuera de orden, aun sin haber recibido un mensaje 'DOWN'?
-No se recibieron mensajes fuera de orden.
+En ningun caso se recibieron mensajes fuera de orden desde el consumer. Todo el tiempo estuvo a "timing" con el producer.
 
 #### 6. ¿Que dice el manual acerca de las garantias de envios de mensajes?
-Se envia el mensaje pero no hay garantia en que llegue.
+La documentacion de erlang dice que los mensajes se envian correctamente pero no existe garantia de que se reciban de la misma manera.
