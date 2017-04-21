@@ -8,7 +8,7 @@ stop(Store) ->
    lists:map(fun(E) -> E ! stop end, tuple_to_list(Store)).
 
 lookup(I, Store) ->
-   element(I, Store). % this is a builtin function
+   element(I, Store).
 
 entries(N, Sofar) ->
    if

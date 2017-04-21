@@ -1,5 +1,6 @@
 -module(handler).
 -export([start/3]).
+-import(store,[lookup/2]).
 
 start(Client, Validator, Store) ->
    spawn_link(fun() -> init(Client, Validator, Store) end).
@@ -7,25 +8,25 @@ start(Client, Validator, Store) ->
 init(Client, Validator, Store) ->
    handler(Client, Validator, Store, [], []).
 
-handler(Client, Validator, Store, Reads, Writes) ->
+ handler(Client, Validator, Store, Reads, Writes) ->
    receive
-	{read, Ref, N} ->
-	    case lists:keysearch(N, 1, Writes) of
-	       {value, {N, _, Value}} ->
-		   value 
-		   handler(Client, Validator, Store, Reads, Writes);
- 	       false ->
- 	           element(N, Store) !  
-		   :
-		   handler(Client, Validator, Store, Reads, Writes)
-	    end;
-	{Ref, Entry, Value, Time} ->
-	    :
-	    handler(Client, Validator, Store, [...|Reads], Writes);
-	{write, N, Value} ->
-	    Added = [{N, ..., ...}|...],
-	    handler(Client, Validator, Store, Reads, Added);
-	{commit, Ref} ->
-	    Validator ! {validate, Ref, Reads, Writes, Client};
-	abort -> ok
-   end.
+     {read, Ref, N} ->
+        case lists:keysearch(N, 1, Writes) of
+            {value, {N, _, Value}} ->
+                % si fue escrita no debe hacer nada
+                handler(Client, Validator, Store, Reads, Writes);
+            false ->
+                Entry = lookup(N,Store), %si no se escribio pido la Nesima entrada
+                Entry ! {read, Ref, self()}, % le envio el mensaje read, pasandole la referencia y el handler(self)
+                handler(Client, Validator, Store, Reads, Writes)
+        end;
+    {Ref, Entry, Value, Time} ->
+        Client ! {Ref, Value}, % le envio al cliente la resputa,
+        handler(Client, Validator, Store, [{Entry,Time}|Reads], Writes); % agrego la tupla a reads
+    {write, N, Value} ->
+        Added = [{N,lookup(N,Store),Value}|Writes], % agrego a writes la tupla de escritura local
+        handler(Client, Validator, Store, Reads, Added);
+    {commit, Ref} ->
+        Validator ! {validate, Ref, Reads, Writes, Client};
+    abort -> ok
+ end.
