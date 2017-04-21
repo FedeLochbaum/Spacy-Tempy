@@ -14,6 +14,7 @@ init(Client, Validator, Store) ->
         case lists:keysearch(N, 1, Writes) of
             {value, {N, _, Value}} ->
                 % si fue escrita no debe hacer nada
+                Client ! {Ref, Value} % otra posible opcion, el enunciado no es claro con respecto a este caso
                 handler(Client, Validator, Store, Reads, Writes);
             false ->
                 Entry = lookup(N,Store), %si no se escribio pido la Nesima entrada
