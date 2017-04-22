@@ -2,7 +2,7 @@
 -export([start/1, stop/1]).
 
 start(N) ->
-    spawn(fun() -> init(N) end).
+    register(server,spawn(fun() -> init(N) end)).
 
 stop(Server) ->
     Server ! stop.

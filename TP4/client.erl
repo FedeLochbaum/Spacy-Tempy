@@ -13,8 +13,7 @@ read(Ref,N) ->
     handler ! {read, Ref, N},
     receive
         {Ref, Value} ->
-            io:format("The value is: ~p",[Value]),
-            ok;
+            io:format("The value is: ~p",[Value]);
         _ ->
             abort
     end.
