@@ -33,8 +33,7 @@ update(Writes) ->
 validate(Reads) ->
     {N, Tag} = send_checks(Reads),
     check_reads(N, Tag).
-
-
+  
 send_checks(Reads) ->
     Tag = make_ref(),
     Self = self(),
@@ -44,8 +43,6 @@ send_checks(Reads) ->
           end,
           Reads),
     {N, Tag}.
-
-
 
 check_reads(N, Tag) ->
     if
