@@ -25,7 +25,8 @@ validator() ->
     end.
 
 update(Writes) ->
-  ok. % falta hacer este ejercicio para luego continuar con el servidor.
+  lists:map(fun({_,Entry,Value}) -> Entry ! {write, Value} end, Writes).
+  % como el unico que puede editar el valor es la entrada, a cada elemento de la enrada le digo que actualice su valor.
 
 
 
