@@ -13,6 +13,7 @@ read(Ref,N) ->
     handler ! {read, Ref, N},
     receive
         {Ref, Value} ->
+            io:format("The reference is: ~p",[Ref]),
             io:format("The value is: ~p",[Value]);
         _ ->
             abort

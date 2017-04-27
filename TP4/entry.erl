@@ -20,8 +20,10 @@ entry(Value, Time) ->
 		 Handler ! {Ref, abort}
 	   end,
 	   entry(Value, Time);
-   {write, New} ->
-	entry(New, make_ref());
+  {write, New} ->
+		NewRef = make_ref(),
+		io:format("The reference is: ~p",[NewRef]),
+		entry(New, NewRef);
    stop ->
-	ok
-   end.
+		 ok
+  end.
