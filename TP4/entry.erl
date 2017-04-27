@@ -22,7 +22,6 @@ entry(Value, Time) ->
 	   entry(Value, Time);
   {write, New} ->
 		NewRef = make_ref(),
-		io:format("The reference is: ~p",[NewRef]),
 		entry(New, NewRef);
    stop ->
 		 ok

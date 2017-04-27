@@ -1,5 +1,5 @@
 -module(client).
--export([open/1,read/2,write/2,commit/1,abort/0]).
+-export([open/1,read/3,write/2,commit/1,abort/0]).
 
 open(Server) ->
     Server ! {open, self()},
@@ -9,12 +9,11 @@ open(Server) ->
     end.
 
 
-read(Ref,N) ->
+read(Ref,N,Pid) ->
     handler ! {read, Ref, N},
     receive
         {Ref, Value} ->
-            io:format("The reference is: ~p",[Ref]),
-            io:format("The value is: ~p",[Value]);
+            Pid ! ok;
         _ ->
             abort
     end.
