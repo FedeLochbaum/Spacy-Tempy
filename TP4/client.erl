@@ -1,16 +1,17 @@
 -module(client).
--export([open/1,read/3,write/2,commit/1,abort/0]).
+-export([open/1,read/3,write/3,commit/2,abort/1]).
 
 open(Server) ->
     Server ! {open, self()},
     receive
         {transaction, Validator, Store} ->
-            register(handler,handler:start(self(), Validator, Store))
+            handler:start(self(), Validator, Store)
     end.
 
 
-read(Ref,N,Pid) ->
-    handler ! {read, Ref, N},
+read(Handler,N,Pid) ->
+    Ref = 1,
+    Handler ! {read, Ref, N},
     receive
         {Ref, Value} ->
             Pid ! ok;
@@ -18,12 +19,12 @@ read(Ref,N,Pid) ->
             abort
     end.
 
-write(N,Value) ->
-    handler ! {write, N, Value}.
+write(Handler,N,Value) ->
+    Handler ! {write, N, Value}.
 
 
-commit(Ref) ->
-    handler ! {commit, Ref},
+commit(Handler,Ref) ->
+    Handler ! {commit, Ref},
     receive
         {Ref, ok} ->
             ok;
@@ -31,5 +32,5 @@ commit(Ref) ->
             abort
     end.
 
-abort() ->
-  handler ! abort.
+abort(Handler) ->
+  Handler ! abort.

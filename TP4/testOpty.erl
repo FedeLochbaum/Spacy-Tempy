@@ -6,7 +6,6 @@ bench(N,M) ->
   Start = erlang:system_time(micro_seconds),
 
   server:start(M),
-  client:open(server),
   run(N,M),
   waitForClients(N),
   Finish = erlang:system_time(micro_seconds),
@@ -25,20 +24,22 @@ run(N,M) ->
   end.
 
 request(M) ->
-  spawn_link(fun() -> 
-                client:read(1,rand:uniform(M),self()) 
+  spawn(fun() -> 
+                H = client:open(server),
+                client:read(H,rand:uniform(M),self())
             end).
 
 
 waitForClients(N) ->
   if N == 0 ->
-    server ! stop,
-    client:abort();
+    server ! stop;
+    % falta eliminar los handlers
   true -> 
     receive
       ok -> 
-        io:format("  N:~w~n", [N]),
-        waitForClients(N-1)
+        waitForClients(N-1);
+      _ ->
+        abort
     end
   end.
 
