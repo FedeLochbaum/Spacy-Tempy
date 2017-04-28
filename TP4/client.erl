@@ -14,7 +14,7 @@ read(Handler,N,Pid) ->
     Handler ! {read, Ref, N},
     receive
         {Ref, Value} ->
-            Pid ! ok;
+            Pid ! {ok, Handler};
         _ ->
             abort
     end.

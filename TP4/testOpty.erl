@@ -10,6 +10,8 @@ bench(N,M) ->
   waitForClients(N),
   Finish = erlang:system_time(micro_seconds),
   Totaltime = (Finish-Start)*1000000,
+  io:format("  Cantidad de clientes: ~w~n", [N]),
+  io:format("  Cantidad de entradas: ~w~n", [M]),
   io:format("  Tardo en segundos: ~w~n", [Totaltime]),
   io:format("  Cantidad de lecturas por segundo: ~w~n", [Totaltime/N]).
 
@@ -24,22 +26,22 @@ run(N,M) ->
   end.
 
 request(M) ->
-  spawn(fun() -> 
+  This = self(),
+  spawn(fun() ->
                 H = client:open(server),
-                client:read(H,rand:uniform(M),self())
+                client:read(H,rand:uniform(M),This)
             end).
 
 
 waitForClients(N) ->
   if N == 0 ->
     server ! stop;
-    % falta eliminar los handlers
-  true -> 
+  true ->
     receive
-      ok -> 
+      {ok, Handler} ->
+        client:abort(Handler),
         waitForClients(N-1);
       _ ->
         abort
     end
   end.
-
