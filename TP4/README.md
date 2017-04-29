@@ -1,42 +1,45 @@
 # TP4 Opty: control concurrencia optimista
 
-El control de bloqueo optimista o control de concurrencia optmista nos permite reducir el nivel de aislamiento que se utiliza en una aplicación. 
-Este tipo de control permite que varios usuarios intenten actualizar el mismo registro sin informar a los usuarios de que otros también están intentando actualizar el registro.
+El control de bloqueo optimista o control de concurrencia optmista nos permite reducir el nivel de aislamiento que se utiliza en una aplicaciÃ³n. 
+Este tipo de control permite que varios usuarios intenten actualizar el mismo registro sin informar a los usuarios de que otros tambiÃ©n estÃ¡n intentando actualizar el registro.
 
-Un bloqueo optimista es que evista la sobrecarga del bloque de un registro durante la duración de la acción.
+Un bloqueo optimista es que evista la sobrecarga del bloque de un registro durante la duraciÃ³n de la acciÃ³n.
 
 ### Performance
 
-#### 1. ¿Performa?
+#### 1. Â¿Performa?
+La ejecuciÃ³n de cada instrucciÃ³n se realiza de forma rÃ¡pida, solo en el caso del Commit tarda un poco mÃ¡s, y esto es debido a que se debe validar el Commit.
 
+#### 2. Â¿CuÃ¡ntas transacciones podemos hacer por segundo?
+Con 10000 usuarios (procesos) y 100 registros
+> - Para lectura: 2.5e-5
+- Para escritura: 2.65e-5
+> - Para commit: 2.81e-5
 
-#### 2. ¿Cuántas transacciones podemos hacer por segundo?
+#### 3. Â¿Cuales son las limitaciones en el nÃºmero de transacciones concurrentes y la tasa de Ã©xito?
+Con 1 millÃ³n o mÃ¡s de usuarios (proceos) haciendo read, write y commit reporta error.
 
+#### 4. Â¿Algo mÃ¡s?
+En el store no se soportan muchos registros, el mÃ¡ximo que puede soportar es dependiendete de la memoria del equipo no llega a 100,000
 
-#### 3. ¿Cuales son las limitaciones en el número de transacciones concurrentes y la tasa de éxito?
+#### 5. Â¿Es realista la implementaciÃ³n del store que tenemos?
+Si, porque ayuda a mantener el cÃ³digo mÃ¡s limpio, separado por mÃ³dulos y con esto es mejor hacer modificaciones facilmente en caso de que se requiera.
 
+#### 6. Â¿QuÃ© rÃ¡pido podemos operar sobre el store?
+Es rÃ¡pido porque no depende de otro mÃ³dulo, solo cuando se le solicita aÃ±ade o toma de la lista.
 
-#### 4. ¿Algo más?
-
-
-#### 5. ¿Es realista la implementación del store que tenemos?
-Si, porque ayuda a mantener el código más limpio, separado por módulos y con esto es mejor hacer modificaciones facilmente en caso de que se requiera.
-
-#### 6. ¿Qué rápido podemos operar sobre el store?
-
-
-#### 7. ¿Qué sucede si hacemos esto en una red de Erlang distribuida, qué es lo que se copia cuando el handler de transacciones arranca?
+#### 7. Â¿QuÃ© sucede si hacemos esto en una red de Erlang distribuida, quÃ© es lo que se copia cuando el handler de transacciones arranca?
 Copia el Client, Validator y el Store.
 
-#### 8. ¿Dónde corre el handler?
+#### 8. Â¿DÃ³nde corre el handler?
 Corre del lado del Cliente
 
-#### 9. ¿Cuales son los pros y contras de la estrategia de implementación?
+#### 9. Â¿Cuales son los pros y contras de la estrategia de implementaciÃ³n?
 
 ##### Pros
 - El uso del Handler ayuda a realizar todas las operaciones: read, write
-- El Validator como su nombre lo indica es el que valida si el archivo ha sido moficado o no, si sí, entonces hace la escritura. 
-- El store que es donde almacena los datos, hace los escrituras directamente al archivo y también toma un dato en caso de necesitarlo.
+- El Validator como su nombre lo indica es el que valida si el archivo ha sido moficado o no, si sÃ­, entonces hace la escritura. 
+- El store que es donde almacena los datos, hace los escrituras directamente al archivo y tambiÃ©n toma un dato en caso de necesitarlo.
 
 ##### Contra
-- 
+- Hubo varias modificaciones para hacer funcionar correctamente el Test.
