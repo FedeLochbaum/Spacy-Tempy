@@ -26,6 +26,7 @@ handler(Client, Validator, Store, Reads, Writes) ->
       handler(Client, Validator, Store, [{Entry,Time}|Reads], Writes); % agrego la tupla a reads
   {write, N, Value} ->
       Added = [{N,lookup(N,Store),Value}|Writes], % agrego a writes la tupla de escritura local
+      Client ! {N, Value},
       handler(Client, Validator, Store, Reads, Added);
   {commit, Ref} ->
       Validator ! {validate, Ref, Reads, Writes, Client};

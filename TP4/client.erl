@@ -1,5 +1,5 @@
 -module(client).
--export([open/1,read/3,write/3,commit/2,abort/1]).
+-export([open/1,read/3,write/4,commit/3,abort/1]).
 
 open(Server) ->
     Server ! {open, self()},
@@ -19,17 +19,23 @@ read(Handler,N,Pid) ->
             abort
     end.
 
-write(Handler,N,Value) ->
-    Handler ! {write, N, Value}.
+write(Handler,N,Value, Pid) ->
+    Handler ! {write, N, Value},
+    receive
+        {N, Value} ->
+            Pid ! {ok, Handler};
+        _ ->
+            abort
+    end.
 
 
-commit(Handler,Ref) ->
+commit(Handler,Ref,Pid) ->
     Handler ! {commit, Ref},
     receive
         {Ref, ok} ->
-            ok;
+            Pid ! {ok, Handler};
         {Ref, abort} ->
-            abort
+            Pid ! abort
     end.
 
 abort(Handler) ->
