@@ -1,5 +1,5 @@
 -module(testOpty).
--export([bench/2, waitForProcces/1]).
+-export([bench/2]).
 
 
 bench(N,M) ->
@@ -27,32 +27,25 @@ bench(N,M) ->
 
 run(N,M) ->
   This = self(),
-  spawn(fun() ->
-      runOperation(N,M, read,This)
-      end),
-
-  spawn(fun() ->
-      runOperation(N,M, write,This)
-      end),
-
-  spawn(fun() ->
-      runOperation(N,M, commit,This)
-    end).
+  spawn(fun() -> runOperation(N,M, read,This) end),
+  spawn(fun() -> runOperation(N,M, write,This) end),
+  spawn(fun() -> runOperation(N,M, commit,This) end).
 
 
-runOperation(N,M,Op,father) ->
+
+runOperation(N,M,Op,Father) ->
   if N == 0 ->
     waitForProcces(N),
-    father ! {erlang:system_time(micro_seconds),Op};
+    Father ! {erlang:system_time(micro_seconds),Op};
   true ->
     request(M,Op),
-    runOperation(N-1,M,Op,father)
+    runOperation(N-1,M,Op,Father)
   end.
 
 waitForTests(R,W,C) ->
   if ((R /= 0) and (W /= 0) and (C /= 0)) ->
+    server ! stop,
     {R,W,C};
-
   true ->
     receive
       {T, read} ->
@@ -61,7 +54,7 @@ waitForTests(R,W,C) ->
       {T, write} ->
         waitForTests(R,T,C);
 
-      {T, read} ->
+      {T, commit} ->
         waitForTests(R,W,T);
 
       _ ->
