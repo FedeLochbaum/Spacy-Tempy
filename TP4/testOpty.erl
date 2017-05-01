@@ -52,6 +52,7 @@ runOperation(N,M,Op,father) ->
 waitForTests(R,W,C) ->
   if ((R /= 0) and (W /= 0) and (C /= 0)) ->
     {R,W,C};
+
   true ->
     receive
       {T, read} ->
@@ -67,6 +68,7 @@ waitForTests(R,W,C) ->
         abort
     end
   end.
+
 
 request(M,Op) ->
   This = self(),
