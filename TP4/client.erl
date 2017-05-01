@@ -13,7 +13,7 @@ read(Handler,N,Pid) ->
     Ref = 1,
     Handler ! {read, Ref, N},
     receive
-        {Ref, Value} ->
+        {Ref, _} ->
             Pid ! {ok, Handler};
         _ ->
             abort
@@ -21,12 +21,7 @@ read(Handler,N,Pid) ->
 
 write(Handler,N,Value, Pid) ->
     Handler ! {write, N, Value},
-    receive
-        {N, Value} ->
-            Pid ! {ok, Handler};
-        _ ->
-            abort
-    end.
+    Pid ! {ok, Handler}.
 
 
 commit(Handler,Ref,Pid) ->
@@ -35,7 +30,7 @@ commit(Handler,Ref,Pid) ->
         {Ref, ok} ->
             Pid ! {ok, Handler};
         {Ref, abort} ->
-            Pid ! abort
+            abort
     end.
 
 abort(Handler) ->
