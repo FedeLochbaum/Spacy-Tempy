@@ -16,6 +16,7 @@ read(Handler,N,Pid) ->
         {Ref, _} ->
             Pid ! {ok, Handler};
         _ ->
+            Pid ! {abort, Handler},
             abort
     end.
 
@@ -30,6 +31,7 @@ commit(Handler,Ref,Pid) ->
         {Ref, ok} ->
             Pid ! {ok, Handler};
         {Ref, abort} ->
+            Pid ! {abort, Handler},
             abort
     end.
 

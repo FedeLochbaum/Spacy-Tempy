@@ -7,7 +7,7 @@ bench(N,M) ->
   server:start(M),
 
   {CantRead, CantWrites, CantCommits} = run(N,M),
-  {Tread, Twrite, Tcommit}  = waitForTests(0,0,0),
+  {{Tread,FailsRead}, {Twrite,FailsWrite}, {Tcommit,FailsCommit}}  = waitForTests({0,0},{0,0},{0,0}),
 
   Finish = erlang:system_time(micro_seconds),
 
@@ -17,8 +17,14 @@ bench(N,M) ->
   Totaltime = (Finish-Start)/1000000,
 
   io:format("  Cantidad de clientes lectores: ~w~n", [CantRead]),
+  io:format("  Tasa de fallos de lectores: ~w~n", [FailsRead/CantRead]),
+
   io:format("  Cantidad de clientes escritores: ~w~n", [CantWrites]),
+  io:format("  Tasa de fallos de escritores: ~w~n", [FailsWrite/CantWrites]),
+
   io:format("  Cantidad de clientes commiteadores: ~w~n", [CantCommits]),
+  io:format("  Tasa de fallos de commiteadores: ~w~n", [FailsCommit/CantCommits]),
+
   io:format("  Cantidad total de clientes: ~w~n", [CantRead+CantWrites+CantCommits]),
   io:format("  Cantidad de entradas: ~w~n", [M]),
   io:format("  Promedio de lecturas por segundo: ~w~n", [TotaltimeRead/CantRead]),
@@ -42,27 +48,27 @@ run(N,M) ->
 
 runOperation(N,M,Op,Father) ->
   if N == 0 ->
-    waitForProcces(N),
-    Father ! {erlang:system_time(micro_seconds),Op};
+    Fails = waitForProcces(N,0),
+    Father ! {erlang:system_time(micro_seconds), Fails,Op};
   true ->
     request(M,Op),
     runOperation(N-1,M,Op,Father)
   end.
 
-waitForTests(R,W,C) ->
+waitForTests({R,TR},{W,TW},{C,TC}) ->
   if ((R /= 0) and (W /= 0) and (C /= 0)) ->
     server ! stop,
-    {R,W,C};
+    {{R,TR},{W,TW},{C,TC}};
   true ->
     receive
-      {T, read} ->
-        waitForTests(T,W,C);
+      {T, Fails, read} ->
+        waitForTests({T,Fails},{W,TW},{C,TC});
 
-      {T, write} ->
-        waitForTests(R,T,C);
+      {T, Fails, write} ->
+        waitForTests({R,TR},{T,Fails},{C,TC});
 
-      {T, commit} ->
-        waitForTests(R,W,T);
+      {T, Fails, commit} ->
+        waitForTests({R,TR},{W,TW},{T,Fails});
 
       _ ->
         abort
@@ -87,14 +93,17 @@ usesOperationInClient(Client,commit,M,This) ->
   client:commit(Client,rand:uniform(M*10),This).
 
 
-waitForProcces(N) ->
+waitForProcces(N,M) ->
   if N == 0 ->
-    ok;
+    M;
   true ->
   receive
     {ok, Handler} ->
       client:abort(Handler),
-      waitForProcces(N-1);
+      waitForProcces(N-1,M);
+    {abort, Handler} ->
+      client:abort(Handler),
+      waitForProcces(N-1,M+1);
     _ ->
       abort
   end
