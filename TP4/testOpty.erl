@@ -6,7 +6,7 @@ bench(N,M) ->
   Start = erlang:system_time(micro_seconds),
   server:start(M),
 
-  run(N,M),
+  {CantRead, CantWrites, CantCommits} = run(N,M),
   {Tread, Twrite, Tcommit}  = waitForTests(0,0,0),
 
   Finish = erlang:system_time(micro_seconds),
@@ -16,20 +16,27 @@ bench(N,M) ->
   TotaltimeCommit = (Tcommit-Start)/1000000,
   Totaltime = (Finish-Start)/1000000,
 
-  io:format("  Cantidad de clientes: ~w~n", [N]),
+  io:format("  Cantidad de clientes lectores: ~w~n", [CantRead]),
+  io:format("  Cantidad de clientes escritores: ~w~n", [CantWrites]),
+  io:format("  Cantidad de clientes commiteadores: ~w~n", [CantCommits]),
+  io:format("  Cantidad total de clientes: ~w~n", [CantRead+CantWrites+CantCommits]),
   io:format("  Cantidad de entradas: ~w~n", [M]),
-  io:format("  Promedio de lecturas por segundo: ~w~n", [TotaltimeRead/N]),
-  io:format("  Promedio de escrituras por segundo: ~w~n", [TotaltimeWrite/N]),
-  io:format("  Promedio de commit por segundo: ~w~n", [TotaltimeCommit/N]),
+  io:format("  Promedio de lecturas por segundo: ~w~n", [TotaltimeRead/CantRead]),
+  io:format("  Promedio de escrituras por segundo: ~w~n", [TotaltimeWrite/CantWrites]),
+  io:format("  Promedio de commits por segundo: ~w~n", [TotaltimeCommit/CantCommits]),
   io:format("  Tardo en segundos: ~w~n", [Totaltime]).
 
 
 
 run(N,M) ->
   This = self(),
-  spawn(fun() -> runOperation(N,M, read,This) end),
-  spawn(fun() -> runOperation(N,M, write,This) end),
-  spawn(fun() -> runOperation(N,M, commit,This) end).
+  CReads = rand:uniform(N),
+  CWrites = rand:uniform(N),
+  CCommit = rand:uniform(N),
+  spawn(fun() -> runOperation(CReads,M, read,This) end),
+  spawn(fun() -> runOperation(CWrites,M, write,This) end),
+  spawn(fun() -> runOperation(CCommit,M, commit,This) end),
+  {CReads,CWrites,CCommit}.
 
 
 
