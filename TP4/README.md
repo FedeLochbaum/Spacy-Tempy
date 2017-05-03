@@ -48,7 +48,7 @@ Es rápido porque no depende de otro módulo, solo cuando se le solicita añade 
 Cuando el handler de transacciones arranca, se copia el Client, Validator y el Store.
 
 #### 8. ¿Dónde corre el handler?
-Corre del lado del Cliente
+Corre del lado del Cliente.
 
 #### 9. ¿Cuales son los pros y contras de la estrategia de implementación?
 
@@ -56,6 +56,11 @@ Corre del lado del Cliente
 - El uso del Handler ayuda a realizar todas las operaciones: read, write
 - El Validator como su nombre lo indica es el que valida si el archivo ha sido moficado o no, si sí, entonces hace la escritura.
 - El store que es donde almacena los datos, hace los escrituras directamente al archivo y también toma un dato en caso de necesitarlo.
+- El uso del control de concurrencia optimista hace un mejor rendimiento ya que asume múltiples transacciones y estas se puedan completar frecuentemente sin interferir entre sí.
+- Es rápido, además de que permite mayor grado de paralelismo, al menos, con carrgas de trabajo bajas o medias.
 
 ##### Contra
 - Hubo varias modificaciones para hacer funcionar correctamente el Test.
+- El uso de recursos de datos es frecuente.
+- Cuando hay cargas de trabajo altas aumenta la probabilidad de que se produzca un conflicto, causan un incremento apreciable de trabajo.
+- No es muy óptimo con transacciones largas o muchas transacciones en conflicto.
