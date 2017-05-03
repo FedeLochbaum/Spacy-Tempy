@@ -64,3 +64,8 @@ Corre del lado del Cliente.
 - El uso de recursos de datos es frecuente.
 - Cuando hay cargas de trabajo altas aumenta la probabilidad de que se produzca un conflicto, causan un incremento apreciable de trabajo.
 - No es muy óptimo con transacciones largas o muchas transacciones en conflicto.
+
+
+---
+En este TP se hizo un test con el cual se pudieron corroborar muchas cosas, como por ejemplo que el número de entradas o clientes puede ser muy alto ya que funciona de manera distribuida, es rápido porque cada cliente realiza las tareas independientemente y no le importa lo que hagan los demás, ya que el validator se encarga de saber si es correcto lo que hace el cliente. El test también se encarga de mostrarnos cuanto es el promedio de cada transacción y también la tasa de fallos que hay en cada una de ellas, así también se creo un método el cual permite verificar si todos los clientes ya terminaron de realizar sus transacciones y con esto evitarnos un error; cabe mencionar que cada transacción por cliente se realiza en un proceso y esto lo hace más eficiente.
+El uso de un control concurrente optimista es perfecto para trabajar con registros de este tipo, que deseen Leer, Escribir y Commitear esto debido a que esta técnica asumen que no habrá conflictos en las planificaciones y evita los costosos bloqueos.
