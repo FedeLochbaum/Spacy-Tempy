@@ -1,15 +1,16 @@
 -module(server).
--export([start/0, start/2, stop/0, init/0, init/2]).
+-export([start/1, start/3, stop/1, init/0, init/2]).
 
-start() ->
-    register(server, spawn(server, init, [])).
+start(Name) ->
+    register(Name, spawn(server, init, [])).
 
-start(Domain, DNS) ->
-    register(server, spawn(server, init, [Domain, DNS])).
+%name domain = atomos
+start(Domain, DNS,Name) ->
+    register(Name, spawn(server, init, [Domain, DNS])).
 
-stop() ->
-    server ! stop,
-    unregister(server).
+stop(Name) ->
+    Name ! stop,
+    unregister(Name).
 
 init() ->
     server(entry:new(), 0).
@@ -19,7 +20,8 @@ init(Domain, Parent) ->
     server(entry:new(), 0).
 
 server(Entries, TTL) ->
-    receive{request, From, Req} ->
+    receive
+    {request, From, Req} ->
         io:format("request ~w~n", [Req]),
         Reply = entry:lookup(Req, Entries),
         From ! {reply, Reply, TTL},

@@ -5,7 +5,7 @@ test(Host, Res) ->
     io:format("looking up ~w~n", [Host]),
     Res ! {request, self(), Host},
     receive
-        {reply, {host, Pid}} ->
+        {reply, {host, Pid},TTL} ->
             io:format("sending ping ...", []),
             Pid ! {ping, self()},
             receive
@@ -14,7 +14,7 @@ test(Host, Res) ->
               after 1000 ->
                   io:format("no reply~n")
             end;
-        {reply, unknown} ->
+        {reply, unknown,TTL} ->
             io:format("unknown host~n", []),
             ok;
         Strange ->
