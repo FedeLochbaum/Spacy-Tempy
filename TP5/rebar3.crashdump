@@ -1,0 +1,17 @@
+Error: badarg
+[{io_lib,format,
+         ["Invalid argument ~s to option ~s",
+          [[8217,114,111,111,116,64,49,57,50,46,49,54,56,46,49,46,54,8217],
+           name]],
+         [{file,"io_lib.erl"},{line,168}]},
+ {rebar_core,process_command,2,
+             [{file,"/tmp/yaourt-tmp-trimegisto/aur-rebar3/src/rebar3-3.3.4/_build/default/lib/rebar/src/rebar_core.erl"},
+              {line,124}]},
+ {rebar3,main,1,
+         [{file,"/tmp/yaourt-tmp-trimegisto/aur-rebar3/src/rebar3-3.3.4/_build/default/lib/rebar/src/rebar3.erl"},
+          {line,66}]},
+ {escript,run,2,[{file,"escript.erl"},{line,760}]},
+ {escript,start,1,[{file,"escript.erl"},{line,277}]},
+ {init,start_em,1,[]},
+ {init,do_boot,3,[]}]
+

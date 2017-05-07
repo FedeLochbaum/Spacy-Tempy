@@ -20,6 +20,7 @@ init(Domain, Parent) ->
     server(entry:new(), 0).
 
 server(Entries, TTL) ->
+    io:format("las entradas actuales son : ~w~n", [Entries]),
     receive
     {request, From, Req} ->
         io:format("request ~w~n", [Req]),

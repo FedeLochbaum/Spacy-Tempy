@@ -4,12 +4,16 @@
 new() ->
   maps:from_list([]).
 
-add([],_,_,Cache) ->
-  Cache;
+% add([],_,_,Cache) ->
+%   Cache;
+%
+% add([Name|Domain], Time, DNS, OldCache) ->
+%   add(Domain,Time,DNS,maps:put(Name,{DNS,Time},OldCache)).
 
-add([Name|Domain], Time, DNS, OldCache) ->
-  add(Domain,Time,DNS,maps:put(Name,{DNS,Time},OldCache)).
-
+add(ListDomain, Time, DNS, OldCache) ->
+  Cache = maps:put(ListDomain,{DNS,Time},OldCache),
+  io:format("La cache es : ~w~n", [Cache]),
+  Cache.
 
 isValid({_,Time}) ->
   time:valid(Time,time:now()).
@@ -18,10 +22,11 @@ lookup(Name,Cache) ->
   case maps:find(Name,Cache) of
     error ->
       unknown;
-    {ok,Response} ->
-      case isValid(Response) of
+    {ok,{DNS,Time}} ->
+      case isValid({DNS,Time}) of
         true ->
-          {ok,Response};
+          io:format("El dns encontrado es : ~w~n", [DNS]),
+          {ok,DNS};
         false ->
           invalid
       end
