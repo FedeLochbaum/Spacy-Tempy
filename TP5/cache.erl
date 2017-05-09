@@ -25,9 +25,10 @@ lookup(Name,Cache) ->
     {ok,{DNS,Time}} ->
       case isValid({DNS,Time}) of
         true ->
-          io:format("El dns encontrado es : ~w~n", [DNS]),
+          io:format("El dns encontrado valido es : ~w~n", [DNS]),
           {ok,DNS};
         false ->
+          io:format("El dns invalido es : ~w~n", [DNS]),
           invalid
       end
     end.

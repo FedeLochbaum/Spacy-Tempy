@@ -17,10 +17,10 @@ init() ->
 
 init(Domain, Parent) ->
     Parent ! {register, Domain, {dns, self()}},
-    server(entry:new(), 0).
+    server(entry:new(), time:inf()).
 
 server(Entries, TTL) ->
-    io:format("las entradas actuales son : ~w~n", [Entries]),
+    io:format("Las entradas actuales son : ~w~n", [Entries]),
     receive
     {request, From, Req} ->
         io:format("request ~w~n", [Req]),
