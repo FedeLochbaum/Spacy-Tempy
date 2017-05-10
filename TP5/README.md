@@ -19,8 +19,9 @@ En cambio, si ponemos un TTL = time:inf(), apreciamos que la respuesta de un seg
 Como conclusión decimos que usar un TTL = 2 o 4 es insignificante, debería evaluarse un TTL que no sea excesivamente grande, pero que pueda mantener un server valido aunque sea una cantidad decimal de segundos.
 
 
-#### 3. Cambiarlo a un par de minutos y mover los hosts, esto es apagarlos e iniciarlos registrándolos bajo un nuevo nombre. ¿Cuándo se encuentra el nuevo server, cuantos nodos necesitan
-saber sobre el cambio?
+#### 3. Cambiarlo a un par de minutos y mover los hosts, esto es apagarlos e iniciarlos registrándolos bajo un nuevo nombre. ¿Cuándo se encuentra el nuevo server, cuantos nodos necesitan saber sobre el cambio?
+Comenzamos levantando el [Ejemplo](https://gitlab.com/trimegisto/sistemas_distribuidos/blob/b5b340a86aaaf68a9001e6636f92efb1cd13aae6/TP5/Como-correrlo.md) usado para corroborar preguntas anteriores, luego hacemos stop de los host levantados y los volvemos a correr con otro nombre. Como la cache había guardado la referencia al server 'se' con sus dominios (www, ftp) el resolver le pide a 'se' los host encargados de ese subdominio y este busca en sus respectivas entradas los nuevos host. Como vemos, no es necesario actualizar la cache si los host son renombrados o si mueren por algún motivo.
+Si bien es una gran ventaja a la hora de hacer el request (no es necesario cachear nuevamente los servers), esto supone un problema, ya que el resolver no se entera en ningún momento si se cae o no un host, asumiendo que nos interesa saberlo.
 
 
 #### 4. ¿Cómo puede la cache organizarse mejor?
