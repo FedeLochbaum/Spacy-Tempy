@@ -25,15 +25,20 @@ saber sobre el cambio?
 
 #### 4. ¿Cómo puede la cache organizarse mejor?
 Para ser más eficiente es necesario mantener solo los datos que se usan frecuentemente, con esto es borrar los datos inecesarios. Para borrarlos se puede hacer que dado un cierto tiempo la información que no se ha usado en cache sea borrada y con estó se reducen los tiempos de búsqueda.
+Básicamente, la tarea de validar si un valor cacheado es útil o no, requiere cierto tiempo que el cache podría optimizar no usándolo.
+Es claro además, que también depende de la estructura de datos que se utilice para modelar la cache y su orden de complejidad.
 
 
 #### 5. ¿Cómo podemos reducir el tiempo de búsqueda?
-Manteniendo en la cache solo los datos necesarios que se usan con más frecuencia.
+Claramente para reducir el tiempo de búsqueda debería, por un lado elegir un buen TTL que garantice la menor tasa de fallos posibles pero además, como dijimos anteriormente, eliminar ciertos datos que no son usados en la actualidad. A pesar de que la memoria no es un problema, asumimos que en un modelo real es muy necesario tenerlo en cuenta.
+Por otro lado, nuestra implementación de cache utiliza un diccionario para relacionar los diferentes servers con sus respectivos dominios. Por esto mismo, asumimos "inocentemente" que el orden de complejidad en la búsqueda no es un problema, esta de más decir que esto es un grave error, si el dominio del tp sería real la solución actual no sería viable.
 
 
 #### 6. ¿Podemos usar una tabla de hash o un árbol?
+Continuando la idea de la sección anterior, dijimos que el orden de complejidad para buscar, agregar y leer son importantes en un dominio real de trabajo. En nuestro caso utilizamos el módulo Maps proporcionado por erlang, que consiste en un diccionario clave -> valor. A pesar de investigar en la documentación oficial sobre los ordenes de complejidad, no logramos encontrar nada referente a este tema, por lo que asumimos que el orden de complejidad de la búsqueda (la más interesante para nosotros) es O(N) donde N es el largo del diccionario.
 
+Si tomamos como referencia el orden anteriormente mencionado, vemos que existen otras formas alternativas mas "eficientes" para resolver el problema.
 
+Uno de ellos, es una tabla de hash, con una buena función de hash, podría garantizar un orden de complejidad de O(1), asumiendo que esta función garantiza una tasa baja de colisiones dentro de la tabla y que la tabla de hash no deba hacer resize continuamente.
 
----
-Como sabemos la cache es una memoria auxiliar donde se almacenan datos o archivos para acceder a ellos de forma más sencilla y rápida. Es muy útil pero a veces puede causar problemas para eso se debe verificar si la cache está actualizada, también ayuda mucho que la cache solo tenga información que sea utilizada.
+Otra solución viable es la de un árbol de búsqueda. Como sabemos el árbol de búsqueda puede garantizar un orden de complejidad O(logN) es decir el logaritmo de N. Es claro que una implementación así, no es nada trivial y que se debe mantener buenos invariantes de representación para que el orden de las demás operaciones no crezca exponencialmente.
