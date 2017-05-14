@@ -8,17 +8,50 @@ start(Nodes) ->
 stop(Logger) ->
   Logger ! stop.
 
-init(_) ->
-  loop().
+init(Nodes) ->
+  loop(time:clock(Nodes),queue:new()).
 
-loop() ->
+loop(Clock,Queue) ->
   receive
     {log, From, Time, Msg} ->
-      log(From, Time, Msg),
-      loop();
+      UpdateClock = time:update(From,Time,Clock),
+      UpdateQueue = showMsgs(queue:snoc(Queue,{From,Time,Msg}),UpdateClock),
+      loop(UpdateClock,UpdateQueue);
     stop ->
       ok
   end.
 
+
+showMsgs(Queue,Clock) ->
+  case(queue:is_empty(Queue)) of
+    true ->
+      Queue;
+    false ->
+      {From,Time,Msg} = queue:head(Queue),
+      Dequeue = queue:tail(Queue),
+      case (time:safe(Time,Clock)) of
+        true ->
+          log(From,Time,Msg),
+          showMsgs(Dequeue,Clock);
+        false ->
+          queue:snoc(showMsgs(Dequeue,Clock),{From,Time,Msg})
+      end
+  end.
+
 log(From, Time, Msg) ->
   io:format("log: ~w ~w ~p~n", [Time, From, Msg]).
+
+% loop(Clock,Queue) ->
+%   receive
+%     {log, From, Time, Msg} ->
+%       % log(From, Time, Msg),
+%       if(time:safe(Time,Clock)) ->
+%         log(From,Time,Msg),
+%         Queue = showMsgs(Time)
+%       true ->
+%         time:update(From,Time,Clock)
+%         Queue =  Queue:add({From,Time,Msg},Queue)
+%       loop(time:update(From,Time,Clock),Queue);
+%     stop ->
+%       ok
+%   end,
