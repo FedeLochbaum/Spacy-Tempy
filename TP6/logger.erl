@@ -40,18 +40,3 @@ showMsgs(Queue,Clock) ->
 
 log(From, Time, Msg) ->
   io:format("log: ~w ~w ~p~n", [Time, From, Msg]).
-
-% loop(Clock,Queue) ->
-%   receive
-%     {log, From, Time, Msg} ->
-%       % log(From, Time, Msg),
-%       if(time:safe(Time,Clock)) ->
-%         log(From,Time,Msg),
-%         Queue = showMsgs(Time)
-%       true ->
-%         time:update(From,Time,Clock)
-%         Queue =  Queue:add({From,Time,Msg},Queue)
-%       loop(time:update(From,Time,Clock),Queue);
-%     stop ->
-%       ok
-%   end,

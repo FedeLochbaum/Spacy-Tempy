@@ -42,8 +42,9 @@ update(Node, Time, Clock) ->
 
 % : retorna true o false si es seguro enviar el mensaje de log de un evento que ocurrió en el tiempo Time dado.
 safe(Time, Clock) ->
+  % Fun = fun(_,TimeName,AccIn) -> AccIn andalso (Time < TimeName) end,
+  % maps:fold(Fun,true,Clock).
   safeTimeOfList(maps:to_list(Clock),Time).
-
 
 safeTimeOfList([],_) ->
   true;
