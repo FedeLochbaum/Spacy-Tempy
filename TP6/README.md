@@ -4,9 +4,9 @@
 
 #### 1. Corramos algunos tests y tratemos de encontrar mensajes de log que sean mostrados fuera de orden. ¿Cómo sabemos que fueron impresos fuera de orden?
 
-Como podemos apreciar en el ejemplo mas abajo, vemos que existen trazas donde el logger recibe e imprime prematuramente un "received" antes que su respectivo "sending". Por lo tanto podemos decir que existen interlivings donde algunos  Workers esperan mucho mas tiempo (tienen un Jilter muy grande) para logear el evento de sending que el Worker que lo recibe, este ultimo, le envia al logger el mensaje de receive y se imprime con exito.
+Como podemos apreciar en el ejemplo mas abajo, vemos que existen trazas donde el Logger recibe e imprime prematuramente un "received" antes que su respectivo "sending". Por lo tanto, podemos decir que existen interleavings donde algunos Workers esperan mucho más tiempo (tienen un Jilter muy grande) para logear el evento de sending que el Worker que lo recibe, este último, le envía al logger el mensaje de receive y se imprime con éxito.
 
-Vale aclarar que si bien con cualquier Sleep y Jilter arbitrario se daran estas trazas. Entendemos que el tiempo que se le da a los Workers para esperar un mensaje de otro y el tiempo del cual cada Worker espera para notificarle al logger, influencian en gran medida a la posbilidad de imprimir logs fuera de orden.
+Vale aclarar que si bien con cualquier Sleep y Jilter arbitrario se darán estas trazas. Entendemos que el tiempo que se le da a los Workers para esperar un mensaje de otro y el tiempo del cual cada Worker espera para notificarle al logger, influencian en gran medida a la posibilidad de imprimir logs fuera de orden.
 
 > - log: na ringo {received,{hello,57}}
 - log: na john {sending,{hello,57}}
@@ -18,9 +18,9 @@ Vale aclarar que si bien con cualquier Sleep y Jilter arbitrario se daran estas 
 ### 4 Tiempo Lamport
 
 #### 1. ¿Cómo identificamos mensajes que estén en orden incorrecto?
-Ahora, los Workers llevan cuenta su tiempo logico y que cada vez que uno le envia un mensaje a otro, el ultimo actualiza su Time y continua trabajando. Como el tiempo logico de cada Worker, en cada operacion es enviado dentro del mensaje al logger, este lo imprime como parte del log, por lo tanto vemos en la salida, trazas incorrectas que antes no podiamos identificar ya que no sabiamos en que tiempo estaban sucediendo.
+Ahora, los Workers llevan cuenta su tiempo lógico y que cada vez que uno le envía un mensaje a otro, el último actualiza su Time y continua trabajando. Como el tiempo lógico de cada Worker, en cada operación es enviado dentro del mensaje al logger, este lo imprime como parte del log, por lo tanto, vemos en la salida, trazas incorrectas que antes no podíamos identificar ya que no sabíamos en que tiempo estaban sucediendo.
 
-Para ver un claro ejemplo de estas posibles trazas mostramos el siguiente interliving:
+Para ver un claro ejemplo de estas posibles trazas mostramos el siguiente interleaving:
 
 > - log: 0 ringo {received,{hello,57}}
 - log: 0 john {sending,{hello,57}}
@@ -31,8 +31,9 @@ Para ver un claro ejemplo de estas posibles trazas mostramos el siguiente interl
 
 
 #### 2. ¿Qué es siempre verdadero y qué es a veces verdadero?
-Siempre es verdadero el orden del contador de cada Worker, se incrementa correctamente.
-A veces es verdadero que se envíe primero el log de envío y luego esté el log de recibir.
+Lo que podemos decir es que a pesar de que cada Worker mantiene su tiempo lógico, no es verdadero afirmar que el Logger en su tarea de imprimir los mensajes que recibe, lo hará en el orden que el tiempo dice. Como vimos en el ejemplo anterior, en algunos casos se imprimirán eventos donde el tiempo se distingue notablemente del tiempo del log inmediatamente anterior.
+
+Lo que si es cierto es que el Timer que contiene cada Worker está directamente sincronizado con el Worker que está trabajando, claro, estos cambian constantemente ya que se utiliza una selección random para el siguiente envío de mensaje. Aun así, la utilización de un Timer sincronizado entre pares no ayuda en medida alguna al loggeo de mensajes en el orden correcto.
 
 
 #### 3. ¿Cómo lo hacemos seguro?
@@ -68,4 +69,4 @@ A veces es verdadero que se envíe primero el log de envío y luego esté el log
 
 ### 4.3 Vectores de relojes
 
-1. ¿Qué diferencias habrían si se hubieran utilizado vectores de relojes?
+#### 1. ¿Qué diferencias habrían si se hubieran utilizado vectores de relojes?
