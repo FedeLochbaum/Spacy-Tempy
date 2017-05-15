@@ -4,9 +4,9 @@
 
 #### 1. Corramos algunos tests y tratemos de encontrar mensajes de log que sean mostrados fuera de orden. ¿Cómo sabemos que fueron impresos fuera de orden?
 
-Como podemos apreciar en el ejemplo mas abajo, vemos que existen trazas donde el logger recibe e imprime prematuramente un "received" antes de su respectivo "sending". Por lo tanto podemos decir que existen interlivings donde algunos  workers esperan mucho mas tiempo (tienen un Jilter muy grande) para logear el evento de sending que el worker que lo recibe, este ultimo, le envia al logger el mensaje de receive y se imprime con exito.
+Como podemos apreciar en el ejemplo mas abajo, vemos que existen trazas donde el logger recibe e imprime prematuramente un "received" antes que su respectivo "sending". Por lo tanto podemos decir que existen interlivings donde algunos  Workers esperan mucho mas tiempo (tienen un Jilter muy grande) para logear el evento de sending que el Worker que lo recibe, este ultimo, le envia al logger el mensaje de receive y se imprime con exito.
 
-Vale aclarar que si bien con cualquier Sleep y Jilter arbitrario se daran estas trazas. Entendemos que el tiempo que se le da a los workers para esperar un mensaje de otro y el tiempo del cual cada worker espera para notificarle al logger, influencian en gran medida a la posbilidad de imprimir logs fuera de orden.
+Vale aclarar que si bien con cualquier Sleep y Jilter arbitrario se daran estas trazas. Entendemos que el tiempo que se le da a los Workers para esperar un mensaje de otro y el tiempo del cual cada Worker espera para notificarle al logger, influencian en gran medida a la posbilidad de imprimir logs fuera de orden.
 
 > - log: na ringo {received,{hello,57}}
 - log: na john {sending,{hello,57}}
@@ -18,7 +18,16 @@ Vale aclarar que si bien con cualquier Sleep y Jilter arbitrario se daran estas 
 ### 4 Tiempo Lamport
 
 #### 1. ¿Cómo identificamos mensajes que estén en orden incorrecto?
-Por el contador del Worker, vemos que un Worker ya está recibiendo un mensaje antes de que se lo manden.
+Ahora, los Workers llevan cuenta su tiempo logico y que cada vez que uno le envia un mensaje a otro, el ultimo actualiza su Time y continua trabajando. Como el tiempo logico de cada Worker, en cada operacion es enviado dentro del mensaje al logger, este lo imprime como parte del log, por lo tanto vemos en la salida, trazas incorrectas que antes no podiamos identificar ya que no sabiamos en que tiempo estaban sucediendo.
+
+Para ver un claro ejemplo de estas posibles trazas mostramos el siguiente interliving:
+
+> - log: 0 ringo {received,{hello,57}}
+- log: 0 john {sending,{hello,57}}
+- log: 1 john {received,{hello,77}
+- log: 1 paul {sending,{hello,68}}
+- log: 2 ble {sending,{hello,90}}
+- log: 0 bla {sending,{hello,07}}
 
 
 #### 2. ¿Qué es siempre verdadero y qué es a veces verdadero?
