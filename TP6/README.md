@@ -4,7 +4,9 @@
 
 #### 1. Corramos algunos tests y tratemos de encontrar mensajes de log que sean mostrados fuera de orden. ¿Cómo sabemos que fueron impresos fuera de orden?
 
-Como podemos apreciar en el siguiente ejemplo, vemos que existen trazas donde el logger recibe e imprime primero "received" antes que su respectivo "sending". Por lo tanto podemos decir que existen interlivings donde algunos  workers esperan mucho mas tiempo (tienen un Jilter muy grande) para logear el evento de sending que el worker que lo recibe, este ultimo, le envia al logger el mensaje de receive y se imprime con exito.
+Como podemos apreciar en el ejemplo mas abajo, vemos que existen trazas donde el logger recibe e imprime prematuramente un "received" antes de su respectivo "sending". Por lo tanto podemos decir que existen interlivings donde algunos  workers esperan mucho mas tiempo (tienen un Jilter muy grande) para logear el evento de sending que el worker que lo recibe, este ultimo, le envia al logger el mensaje de receive y se imprime con exito.
+
+Vale aclarar que si bien con cualquier Sleep y Jilter arbitrario se daran estas trazas. Entendemos que el tiempo que se le da a los workers para esperar un mensaje de otro y el tiempo del cual cada worker espera para notificarle al logger, influencian en gran medida a la posbilidad de imprimir logs fuera de orden.
 
 > - log: na ringo {received,{hello,57}}
 - log: na john {sending,{hello,57}}
