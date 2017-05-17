@@ -50,4 +50,4 @@ safeTimeOfList([],_) ->
   true;
 
 safeTimeOfList([{_,TimeName}|Tail],Time) ->
-  (Time < TimeName) andalso (safeTimeOfList(Tail,Time)).
+  (Time =< TimeName) andalso (safeTimeOfList(Tail,Time)).

@@ -38,15 +38,23 @@ Para ver un claro ejemplo de estas posibles trazas mostramos el siguiente interl
 - log: 2 ble {sending,{hello,90}}
 - log: 0 bla {sending,{hello,07}}
 
+Esto sucede ya que como afirma Lamport si un proceso P mantiene un reloj logico local L y P envia un mensaje  a J, pasandole L, el tiempo logico de J dependera de L cuando reciba el mensaje. Claro, esto genera una concecuencia logica de orden entre dos procesos, pero no puede afirmar (de hecho este es el inconveniente) que entre diferentes procesos, esta causalidad mantenga el orden de los mensajes.
+
 
 #### 2. ¿Qué es siempre verdadero y qué es a veces verdadero?
 Lo que podemos decir es que a pesar de que cada Worker mantiene su tiempo lógico, no es verdadero afirmar que el Logger en su tarea de imprimir los mensajes que recibe, lo hará en el orden que el tiempo dice. Como vimos en el ejemplo anterior, en algunos casos se imprimirán eventos donde el tiempo se distingue notablemente del tiempo del log inmediatamente anterior.
 
 Lo que si es cierto es que el Timer que contiene cada Worker está directamente sincronizado con el Worker que está trabajando, claro, estos cambian constantemente ya que se utiliza una selección random para el siguiente envío de mensaje. Aun así, la utilización de un Timer sincronizado entre pares no ayuda en medida alguna al loggeo de mensajes en el orden correcto.
 
+Volviendo a hacer referencia sobre Lamport, decimos que si P envia un mensaje a J, la consecuencia que se da por esta causalidad es que el tiempo logico en que se envio el mensaje es estrictamente menor al tiempo logico en el que se recibio el mismo. Pero no podemos afirmar el caso inverso (no es bidireccional), es decir, si el tiempo logico en que el proceso P envia un mensaje es menor al tiempo logico en que el proceso J recibe otro mensaje, es imposible afirmar que P le envia un mensaje a J.
+
+Notese que en el capitulo del libro referido a este trabajo, la relacion entre procesos se denota P -> J.
+
 
 #### 3. ¿Cómo lo hacemos seguro?
+Como dice en la seccion del libro, si E es un evento que ocurre en el proceso Pi, con tiempo Ti y E' es un evento que ocurre en el proceso Pj con tiempo Tj. Definimos que el evento E con tiempo Ti sucedio primero si y solo si Ti < Tj o Ti = Tj y en caso de que los identificadores de los procesos tengan cierto orden, podriamos agregar a la condicion que i < j.
 
+Es decir, si un evento I ocurre en tiempo Ti es seguro de imprimir si y solo si, para todos los eventos vemos que Ti <= Te, donde Te es el tiempo logico de cada evento.
 
 
 ### 4.1 La parte delicada

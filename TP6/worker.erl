@@ -23,9 +23,9 @@ loop(Name, Log, Peers, Sleep, Jitter,MeTime)->
   Wait = random:uniform(Sleep),
   receive
     {msg, Time, Msg} ->
-      NewTime = time:merge(Time,MeTime),
+      NewTime = time:inc(self,time:merge(Time,MeTime)),
       Log ! {log, Name, NewTime, {received, Msg}},
-      loop(Name, Log, Peers, Sleep, Jitter,time:inc(self,NewTime));
+      loop(Name, Log, Peers, Sleep, Jitter,NewTime);
     stop ->
       ok;
     Error ->
