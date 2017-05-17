@@ -46,26 +46,28 @@ Lo que si es cierto es que el Timer que contiene cada Worker está directamente 
 
 
 #### 3. ¿Cómo lo hacemos seguro?
-Al agregar un tiempo lógco dentro de los Workers nos aseguramos de que se ordenen los mensajes.
 
 
 
 ### 4.1 La parte delicada
 
-#### 1. Debemos de alguna manera mantener una cola de retención de mensajes que no podemos entregar aun porque no sabemos si recibiremos un mensaje con un timestamp anterior.¿Cómo sabemos si los mensajes son seguros de imprimir?
+#### 1. Debemos de alguna manera mantener una cola de retención de mensajes que no podemos entregar aun porque no sabemos si recibiremos un mensaje con un timestamp anterior. ¿Cómo sabemos si los mensajes son seguros de imprimir?
 
-Cada Worker tiene su lista de mensajes y así mismo estos contienen un Timestamp lógico y el contenido del mensaje. Cuando se recibe un mensaje se guarda en la lista asociada al Worker que envió el mensaje.
 
 
 
 ### 4.2 En el curso
 
 #### 1. Describir si encontraron entradas fuera de orden en la primera implementación y en caso afirmativo, cómo fueron detectadas.
-
+Si se muestran algunas entradas fuera de orden, no son muchas pero vemos que a veces llega primero el "received" antes del "sending", como vemos en lo siguiente:
+> - log: 3 john{sending,{hello,84}}
+- log: 4 paul {received,{hello,7}}
+- log: 4 george {received,{hello,84}}
+- log: 4 john {sending,{hello,7}}
 
 
 #### 2. ¿Qué es lo que el log final nos muestra?
-
+Muestra stop, esto es porque ya no hay un envío de mensajes entre los Workers, entonces el Logger ya no muestra ningún mensaje.
 
 
 #### 3. ¿Los eventos ocurrieron en el mismo orden en que son presentados en el log?
@@ -73,7 +75,7 @@ Cada Worker tiene su lista de mensajes y así mismo estos contienen un Timestamp
 
 
 #### 4. ¿Que tan larga será la cola de retención?
-
+El límite del tamaño dependería del hardware del equipo donde se está implementado, la cola puede retener cientos de mensajes de los Workers.
 
 
 
