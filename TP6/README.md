@@ -61,30 +61,44 @@ Es decir, si un evento I ocurre en tiempo Ti es seguro de imprimir si y solo si,
 
 #### 1. Debemos de alguna manera mantener una cola de retención de mensajes que no podemos entregar aun porque no sabemos si recibiremos un mensaje con un timestamp anterior. ¿Cómo sabemos si los mensajes son seguros de imprimir?
 
-
+Sabemos que el clock contine informacion del ultimo Timelapse de cada proceso. Gracias a esto podemos asumir que si un proceso envia un mensaje en un tiempo Ti, tal mensaje sera seguro si y solo si, Ti es menor o igual a cada uno de los Timelapse del clock. Es decir, si Ti es menor o igual a cada uno de los ultimos Timelapse entonces todos los procesos ya han enviado algun mensaje con un Timelapse superior, por lo cual, como Ti ya no es un mensaje prematuro este es considerado seguro y se puede imprimir.
 
 
 ### 4.2 En el curso
 
 #### 1. Describir si encontraron entradas fuera de orden en la primera implementación y en caso afirmativo, cómo fueron detectadas.
-Si se muestran algunas entradas fuera de orden, no son muchas pero vemos que a veces llega primero el "received" antes del "sending", como vemos en lo siguiente:
-> - log: 3 john{sending,{hello,84}}
-- log: 4 paul {received,{hello,7}}
-- log: 4 george {received,{hello,84}}
-- log: 4 john {sending,{hello,7}}
+Como nombramos al principio, si bien en la primer implementacion se hace provecho de la causalidad que genera enviar y recibir un mensaje (enviar un mensaje siempre sucede antes que recibirlo).
+Vimos que esto no era consistente cuando se trataban de diferentes procesos, es decir que Pi||Pj. Por lo tanto, como no podemos afirmar que Pi -> Pj, existen trazas donde el tiempo no esta sincronizado entre estos.
+
+Un claro ejemplo de esto, fue el que vimos al comienzo del documento, donde todos los mensajes entre pares de Workers eran sincronicos pero entre diferentes pares no lo eran.
 
 
 #### 2. ¿Qué es lo que el log final nos muestra?
-Muestra stop, esto es porque ya no hay un envío de mensajes entre los Workers, entonces el Logger ya no muestra ningún mensaje.
+Al utilizar un cola de espera para retener mensajes que aun no son seguros de imprimir, nos permite mantener en un estado de espera a los mensajes cuyos Timelapse aun no son seguros. Aun asi, vemos que si bien el orden en que se imprimen los mensajes estan bastante sincronizados, existen casos donde se imprime un mensaje con timelapse menor al mensaje inmediatamente anterior.
 
 
 #### 3. ¿Los eventos ocurrieron en el mismo orden en que son presentados en el log?
+Claramente no, si bien esto es dificil es disinguir, habria que generar un test donde se pueda visualizar el orden en que se enviaron los mensajes para compararlo con el orden en que se imprimen. Si bien no se alcanzo con este objetivo, se puede apreciar a simple vista que, a diferencia del orden resultante en las primeras implementaciones, esta ultima garantiza que para poder imprimir un mensaje cualquiera, es necesario encolarlo a la cola de retencion y hacerlo esperar hasta que sea seguro.
+Una forma sencilla de comprobar que efectivamente esta ocurriendo, es observando que no se imprime ningun mensaje con un tiempo mayor antes de terminar de imprimir otro con un tiempo menor.
+
+Para poder apreciar esto veamoslo con un ejemplo:
+
+>- log: 126 paul {received,{hello,98}}
+- log: 127 paul {received,{hello,5}}
+- log: 127 paul {sending,{hello,48}}
+- log: 128 george {sending,{hello,68}}
+- log: 128 george {received,{hello,48}}
+- log: 129 john {sending,{hello,69}}
+- log: 129 paul {received,{hello,3}}
+- log: 129 john {received,{hello,68}}
+- log: 129 paul {sending,{hello,9}}
+- log: 129 george {sending,{hello,65}}
 
 
 
 #### 4. ¿Que tan larga será la cola de retención?
-El límite del tamaño dependería del hardware del equipo donde se está implementado, la cola puede retener cientos de mensajes de los Workers.
-
+Asumiendo que nuestra implementacion de 'safe' es correcta y que garantiza que un mensaje en un tiempo T es seguro si y solo si T es menor o igual al ultimo Timelapse de nada Worker.
+Podemos decir que en el peor de los casos el tamaño de la cola de rentencion sera de N, donde N es la cantidad de Workers trabajando. Como la cola de rentencion guardara mensajes cuyo Times son mayores al menor de todos dentro del clock y solo se imprimiran cada uno de ellos cuando aumente este ultimo, afirmamos que jamas un mensaje puede esperar por mas de N mensajes nuevos de Workers.
 
 
 ### 4.3 Vectores de relojes
