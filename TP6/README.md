@@ -6,14 +6,14 @@
 
 Como podemos apreciar en el ejemplo mas abajo, vemos que existen trazas donde el Logger recibe e imprime prematuramente un "received" antes que su respectivo "sending". Por lo tanto, podemos decir que existen interleavings donde algunos Workers esperan mucho más tiempo (tienen un Jilter muy grande) para logear el evento de sending que el Worker que lo recibe, este último, le envía al logger el mensaje de receive y se imprime con éxito.
 
-Vale aclarar que si bien con cualquier Sleep y Jilter arbitrario se darán estas trazas. Entendemos que el tiempo que se le da a los Workers para esperar un mensaje de otro y el tiempo del cual cada Worker espera para notificarle al logger, influencian en gran medida a la posibilidad de imprimir logs fuera de orden.
+Vale aclarar que si bien con cualquier Sleep y Jilter arbitrario se darán estas trazas. Entendemos que el tiempo que se le da a los Workers para esperar un mensaje de otro y el tiempo del cual cada Worker espera para notificarle al logger, influyen en gran medida a la posibilidad de imprimir logs fuera de orden.
 
 > - log: na ringo {received,{hello,57}}
 - log: na john {sending,{hello,57}}
 - log: na john {received,{hello,77}
 - log: na paul {sending,{hello,68}}
 
-Cuando ejecutamos el método test:run(), los mensajes mostrados no están ordenados. Se sabe que están fuera de orden porque algunos mensajes "received" se registran antes de un mensaje "sending", además podemos verficiar por el valor del mensaje que tiene cada log.
+Cuando ejecutamos el método test:run(), los mensajes mostrados no están ordenados. Se sabe que están fuera de orden porque algunos mensajes "received" se registran antes de un mensaje "sending", además podemos verificar por el valor del mensaje que tiene cada log.
 
 > - log: na ringo {received,{hello,57}}		// Se recibe el mensaje antes de que se envíe
 - log: na john {sending,{hello,57}}			// Mensaje de envío
@@ -27,7 +27,7 @@ También sucede lo anterior por el Jitter ya que este introduce un retardo entre
 ### 4 Tiempo Lamport
 
 #### 1. ¿Cómo identificamos mensajes que estén en orden incorrecto?
-Ahora, los Workers llevan cuenta su tiempo lógico y que cada vez que uno le envía un mensaje a otro, el último actualiza su Time y continua trabajando. Como el tiempo lógico de cada Worker, en cada operación es enviado dentro del mensaje al logger, este lo imprime como parte del log, por lo tanto, vemos en la salida, trazas incorrectas que antes no podíamos identificar ya que no sabíamos en que tiempo estaban sucediendo.
+Los Workers llevan cuenta de su tiempo lógico y que cada vez que uno le envía un mensaje a otro, el último actualiza su Time y continua trabajando. Como el tiempo lógico de cada Worker, en cada operación es enviado dentro del mensaje al logger, este lo imprime como parte del log, por lo tanto, vemos en la salida, trazas incorrectas que antes no podíamos identificar ya que no sabíamos en que tiempo estaban sucediendo.
 
 Para ver un claro ejemplo de estas posibles trazas mostramos el siguiente interleaving:
 
@@ -38,7 +38,7 @@ Para ver un claro ejemplo de estas posibles trazas mostramos el siguiente interl
 - log: 2 ble {sending,{hello,90}}
 - log: 0 bla {sending,{hello,07}}
 
-Esto sucede ya que como afirma Lamport si un proceso P mantiene un reloj lógico local L y P envía un mensaje a J, pasándole L, el tiempo lógico de J dependerá de L cuando reciba el mensaje. Claro, esto genera una consecuencia lógica de orden entre dos procesos, pero no puede afirmar (de hecho este es el inconveniente) que entre diferentes procesos, esta causalidad mantenga el orden de los mensajes.
+Esto sucede ya que, como afirma Lamport, si un proceso P mantiene un reloj lógico local L y P envía un mensaje a J, pasándole L, el tiempo lógico de J dependerá de L cuando reciba el mensaje. Esto genera una consecuencia lógica de orden entre dos procesos, pero no puede afirmar (de hecho este es el inconveniente) que, entre diferentes procesos, esta causalidad mantenga el orden de los mensajes.
 
 
 #### 2. ¿Qué es siempre verdadero y qué es a veces verdadero?
