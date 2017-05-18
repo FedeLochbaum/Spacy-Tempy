@@ -104,3 +104,9 @@ Podemos decir que en el peor de los casos el tamaño de la cola de retención se
 ### 4.3 Vectores de relojes
 
 #### 1. ¿Qué diferencias habrían si se hubieran utilizado vectores de relojes?
+
+Como vimos cuando utilizamos la implementación propuesta por Lamport sucede que L(e) > L(e') no implica que e -> e'. Por esta razón surge la idea de utilizar un Vector de N enteros por cada proceso (Worker), el cual marca dicho Vector con el tiempo de cada evento. Cada Vector es inicializado con tiempo = 0 en cada una de sus posiciones. Cuando un proceso enviar un mensaje, primero actualiza su Vector incrementando el tiempo del evento y luego envía su Vector al proceso receptor. Si nuestro proceso con un vector Vi recibe un mensaje de otro proceso con un vector Vj, setea en cada una de sus posiciones Vi[e] el tiempo máximo entre Vi[e] y Vj[e]. Esto nos permite estar sincronizados con el vector de otro proceso, por lo cual, si tal vector cambio en algún momento antes de recibir el mensaje no supondrá un problema, dado que la referencia a tal vector siempre estará actualizada.
+
+Cabe destacar que en el capítulo del libro referente al trabajo, se demuestra por inducción sobre la cantidad de sucesos que relacione los eventos e -> e' implica que V(e) < V(e') y viceversa.
+
+Por otro lado, utilizar Vectores de relojes supone una desventaja, a diferencia de Lamport, precisa una cantidad de almacenamiento mucho mayor. Como dijimos, cada Worker trabaja con un Vector de tamaño N, donde N = cantidad de procesos.
