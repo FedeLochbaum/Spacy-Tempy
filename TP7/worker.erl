@@ -1,51 +1,58 @@
 -module(worker).
--export([start/6]).
+-export([start/4 , startManager/2]).
 
-start(Name, Group, State, Id, Sleep, Jitter) ->
-	spawn(fun() -> init(Name, Group, State, Id, Sleep, Jitter) end).
-% El group no lo recibe aca
-% Debe recibir el manager
+start(Name, Manager, Sleep, Cast) ->
+	register(Name, spawn(fun() -> init(Name, Manager, {0,0,0}, Sleep, Cast) end)).
 
-init(Name, Group, State, Id, Sleep, Jitter) ->
+
+init(Name, Manager, State, Sleep, Cast) ->
     Gui = gui:start(Name),
+    Manager ! {subscribe, Name},
+    worker(Cast, Gui, State, Sleep).
 		% Cuando hace init, tiene que enviarle a su manager self y este eventualmente le contestara con su grupo de trabajo. Donde el mismo tambien esta.
-    %Cast
-    %Group
-	receive
-	 	{deliver, Color, Peers} ->
-            Cast ! {peers, Peers},
-            Gui ! {color, Color},
-            cast_change(Id, Cast, Sleep),
-            worker(Id, Cast, Color, Gui, Sleep),
-	end.
 
 
-worker(Id, Cast, Color, Gui, Sleep) ->
-	% por tanto segundos no puede enviar nada. Sleep (pero ojo, podria estar recibiendo. Fijate en el tp anterior se hace esto)
-	% luego, debe enviar un mensaje random entre 1 y 20 a todos sus pares
+worker(Cast, Gui, State, Sleep) ->
 	% pasa a escuchar. Cuando llega su mensaje hace recursion actualizando el gui y vuelve a espera para volver a enviar.
-	% pd : si tenes alguna duda no me molesta, pregunta. hoy cuando llegue hacemos call y vemos que cosas seguir mejorando ;)
-	% pdd : espero haber sido claro. Si no lo podes resolver yo lo hago, me importa mas que entiendas que esta pasando.
-	% pdd: si te trabas lee el libro ;)
-	receive
-        {deliver, {Wkr, N}} ->
-            Other_Color = color_change(N, Color),
-            Gui ! {color, Other_Color},
-            if
-                Wkr == Id ->
-                    cast_change(Id, Cast, Sleep);
-                true ->
-                    ok
-            end,
-            worker(Id, Cast, Other_Color, Gui, Sleep);
+    receive
+        {msg, Msg} -> 
+            Gui ! {color, color_change(Msg, State)},
+            worker(Cast, Gui, State, Sleep);
         stop ->
             ok
+        after Sleep ->
+            Message = rand:uniform(20),
+            io:format("envío mensaje: ~w~n", [Message]),
+            Cast ! {msg, Message},
+            receiveMsg(Message, Gui, State),
+            worker(Cast, Gui, State, Sleep)
     end.
+
+
+receiveMsg(Message, Gui, State) ->  
+    receive
+        {msg, Msg} ->    
+            Gui ! {color, color_change(Msg, State)}, 
+            receiveMsg(Message, Gui, State);    
+        {msgOwner, Message} ->      
+            Gui ! {color, color_change(Message, State)},  
+            ok  
+    end.
+    
+
+manager(Cast, List, Time) ->
+    receive
+        {subscribe, Pid} ->
+            NewList = [Pid]++List,
+            manager(Cast, NewList, Time)
+        after Time ->
+            Cast ! {subscribe, List}
+    end.
+
+
+startManager(Cast, Time) ->
+    register(manager, spawn(fun() -> manager(Cast, [], Time) end)).
 
 
 color_change(N, {R,G,B}) ->
     {G, B, ((R+N) rem 256)}.
-
-
-cast_change(Id, Cast, Sleep) ->
-    Msg = {Id, rand:uniform(100)}.
