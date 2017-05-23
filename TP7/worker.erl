@@ -36,7 +36,7 @@ worker(Cast, Gui, State, Sleep) ->
             ok
         after Sleep ->
             Message = rand:uniform(20),
-            io:format("envío mensaje: ~w~n", [Message]),
+            io:format("envio mensaje: ~w~n", [Message]),
             Cast ! {msg, Message},
             receiveMsg(Message, Gui, State,Cast,Sleep)
     end.
@@ -45,7 +45,7 @@ worker(Cast, Gui, State, Sleep) ->
 receiveMsg(Message, Gui, State,Cast,Sleep) ->
     receive
         {msg, Msg} ->
-						io:format("soy worker y me llego este mensaje: ~w~n", [Message]),
+			io:format("soy worker y me llego este mensaje: ~w~n", [Message]),
             Gui ! {color, color_change(Msg, State)},
 						case Msg == Message of
 							true -> worker(Cast, Gui, State, Sleep);

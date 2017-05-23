@@ -4,7 +4,7 @@
 
 start() ->
   cast:start(),
-  worker:startManager(casting,600),
+  worker:startManager(casting,2000),
   worker:start(w1,manager,1000,casting),
   worker:start(w2,manager,1000,casting),
   worker:start(w3,manager,1000,casting),

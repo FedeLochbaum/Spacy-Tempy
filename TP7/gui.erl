@@ -8,24 +8,18 @@ start(Name) ->
 
 init(Name) ->
 	Window = new_window(Name),
+	wxFrame:setBackgroundColour(Window, {0,0,0}),
+	wxFrame:show(Window),
 	loop(Window).
 
 
 new_window(Name) ->
 	Wx = wx:new(),
-	Window = wxFrame:new(Wx, -1, io_lib:format("~w", [Name])),
-	Panel  = wxPanel:new(Window),
-	wxFrame:setBackgroundColour(Panel, {0,0,0}),
-	wxFrame:show(Window).
-	%Window = wxFrame:new(Server, -1, Name, [{size,{200, 200}}]),
-	%wxFrame:setBackgroundColour(Window, ?wxBLACK),
-    %wxFrame:show(Window),
-    %wxFrame:connect(Window, close_window),
-    %Window.
+	Window = wxFrame:new(Wx, -1, io_lib:format("~w", [Name])).
 
 
 color(Window, Tuple) ->
-	wxFrame:setBackgroundColour(Window, Tuple),
+	wxFrame:setBackgroundColour(Window,Tuple),
 	wxFrame:refresh(Window).
 
 
