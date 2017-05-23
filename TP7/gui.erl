@@ -13,7 +13,7 @@ init(Name) ->
 
 new_window(Name) ->
 	Wx = wx:new(),
-	Window = wxFrame:new(Wx, -1, "Colors"),
+	Window = wxFrame:new(Wx, -1, io_lib:format("~w", [Name])),
 	Panel  = wxPanel:new(Window),
 	wxFrame:setBackgroundColour(Panel, {0,0,0}),
 	wxFrame:show(Window).
