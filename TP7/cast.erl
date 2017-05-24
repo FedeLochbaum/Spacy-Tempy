@@ -1,19 +1,20 @@
 -module(cast).
--export([start/0]).
+-export([start/1]).
 
-start() ->
-	register(casting, spawn(fun() -> cast([]) end)).
+start(Jitter) ->
+	spawn(fun() -> cast(Jitter) end).
 
 
-cast(Workers) ->
+cast(Jitter) ->
 	receive
-		{subscribe, List} ->
-			cast(List);
-		{msg, Message} ->
-			sendMessage(Workers, Message),
-			cast(Workers)
+		{sendMessage, Workers, Message} ->
+			sendMessage(Workers, Message,Jitter),
+			cast(Jitter)
 	end.
 
 
-sendMessage(Workers, Message) ->
-	lists:map(fun(Worker) -> Worker ! {msg, Message} end, Workers).
+sendMessage(Workers, Message,Jitter) ->
+	lists:map(fun (Worker) ->
+							Worker ! {msg, Message},
+							timer:sleep(Jitter)
+						end, Workers).
