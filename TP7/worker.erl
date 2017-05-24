@@ -39,12 +39,13 @@ worker(Workers, Gui, State, Sleep) ->
         after Sleep ->
             Message = rand:uniform(20),
             io:format("envio mensaje: ~w~n", [Message]),
-            sendMessage(Workers,Message),
+						spawn(fun() -> sendMessage(Workers, Message) end),
             receiveMsg(Message, Gui, State,Workers,Sleep)
     end.
 
 sendMessage(Workers, Message) ->
-	lists:map(fun(Worker) -> Worker ! {msg, Message} end, Workers).
+	lists:map(fun(Worker) -> Worker ! {msg, Message} end, Workers),
+	stop(self()).
 
 receiveMsg(Message, Gui, State,Workers,Sleep) ->
     receive
