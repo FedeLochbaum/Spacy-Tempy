@@ -30,8 +30,9 @@ worker(Cast, Gui, State, Sleep) ->
 	% pasa a escuchar. Cuando llega su mensaje hace recursion actualizando el gui y vuelve a espera para volver a enviar.
     receive
         {msg, Msg} ->
-            Gui ! {color, color_change(Msg, State)},
-            worker(Cast, Gui, State, Sleep);
+						Ntuple = color_change(Msg, State),
+						Gui ! {color, Ntuple},
+            worker(Cast, Gui, Ntuple, Sleep);
         stop ->
             ok
         after Sleep ->
@@ -46,10 +47,11 @@ receiveMsg(Message, Gui, State,Cast,Sleep) ->
     receive
         {msg, Msg} ->
 			io:format("soy worker y me llego este mensaje: ~w~n", [Message]),
-            Gui ! {color, color_change(Msg, State)},
+						Ntuple = color_change(Msg, State),
+            Gui ! {color, Ntuple},
 						case Msg == Message of
 							true -> worker(Cast, Gui, State, Sleep);
-							false -> receiveMsg(Message, Gui, State,Cast,Sleep)
+							false -> receiveMsg(Message, Gui, Ntuple,Cast,Sleep)
 						end;
 				Bla ->
 						io:format("llego otra cosa: ~w~n", [Bla])
