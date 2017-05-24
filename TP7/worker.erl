@@ -1,57 +1,60 @@
 -module(worker).
--export([start/4 , startManager/2,stop/1]).
+-export([start/3 , startManager/1,stop/1]).
 
-start(Name, Manager, Sleep, Cast) ->
-	register(Name, spawn(fun() -> init(Name, Manager, {0,0,0}, Sleep, Cast) end)).
+start(Name, Manager, Sleep) ->
+	register(Name, spawn(fun() -> init(Name, Manager, {0,0,0}, Sleep) end)).
 
-startManager(Cast, Time) ->
-    register(manager, spawn(fun() -> manager(Cast, [], Time) end)).
+startManager(Time) ->
+    register(manager, spawn(fun() -> manager([], Time) end)).
 
 stop(Worker) ->
   Worker ! stop.
 
-manager(Cast, List, Time) ->
+manager(List, Time) ->
 	   receive
 	       {subscribe, Pid} ->
 	           NewList = [Pid]++List,
-	           manager(Cast, NewList, Time)
+	           manager(NewList, Time)
 	       after Time ->
-	           Cast ! {subscribe, List}
+					 	lists:map(fun(Worker) -> Worker ! {workers, List} end, List)
 	   end.
 
-init(Name, Manager, State, Sleep, Cast) ->
+init(Name, Manager, State, Sleep) ->
     Gui = gui:start(Name),
     Manager ! {subscribe, Name},
-    worker(Cast, Gui, State, Sleep).
-		% Cuando hace init, tiene que enviarle a su manager self y este eventualmente le contestara con su grupo de trabajo. Donde el mismo tambien esta.
+		receive
+			{workers, Workers} ->
+				worker(Workers, Gui, State, Sleep)
+		end.
 
 
-worker(Cast, Gui, State, Sleep) ->
-	% pasa a escuchar. Cuando llega su mensaje hace recursion actualizando el gui y vuelve a espera para volver a enviar.
+worker(Workers, Gui, State, Sleep) ->
     receive
         {msg, Msg} ->
 						Ntuple = color_change(Msg, State),
 						Gui ! {color, Ntuple},
-            worker(Cast, Gui, Ntuple, Sleep);
+            worker(Workers, Gui, Ntuple, Sleep);
         stop ->
             ok
         after Sleep ->
             Message = rand:uniform(20),
             io:format("envio mensaje: ~w~n", [Message]),
-            Cast ! {msg, Message},
-            receiveMsg(Message, Gui, State,Cast,Sleep)
+            sendMessage(Workers,Message),
+            receiveMsg(Message, Gui, State,Workers,Sleep)
     end.
 
+sendMessage(Workers, Message) ->
+	lists:map(fun(Worker) -> Worker ! {msg, Message} end, Workers).
 
-receiveMsg(Message, Gui, State,Cast,Sleep) ->
+receiveMsg(Message, Gui, State,Workers,Sleep) ->
     receive
         {msg, Msg} ->
 			io:format("soy worker y me llego este mensaje: ~w~n", [Message]),
 						Ntuple = color_change(Msg, State),
             Gui ! {color, Ntuple},
 						case Msg == Message of
-							true -> worker(Cast, Gui, State, Sleep);
-							false -> receiveMsg(Message, Gui, Ntuple,Cast,Sleep)
+							true -> worker(Workers, Gui, State, Sleep);
+							false -> receiveMsg(Message, Gui, Ntuple,Workers,Sleep)
 						end;
 				Bla ->
 						io:format("llego otra cosa: ~w~n", [Bla])
