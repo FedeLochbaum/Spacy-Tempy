@@ -1,30 +1,20 @@
 -module(worker).
--export([start/4 , startManager/2,stop/1]).
+-export([start/3 ,stop/1, peers/2]).
 
-start(Name, Manager, Sleep, Cast) ->
-	register(Name, spawn(fun() -> init(Name, Manager, {0,0,0}, Sleep, Cast) end)).
+start(Name, Sleep, Cast) ->
+	register(Name, spawn(fun() -> init(Name, {0,0,0}, Sleep, Cast) end)).
 
-startManager(Cast, Time) ->
-    register(manager, spawn(fun() -> manager(Cast, [], Time) end)).
 
 stop(Worker) ->
   Worker ! stop.
 
-manager(Cast, List, Time) ->
-	   receive
-	       {subscribe, Pid} ->
-	           NewList = [Pid]++List,
-	           manager(Cast, NewList, Time)
-	       after Time ->
-	           Cast ! {subscribe, List}
-	   end.
-
-init(Name, Manager, State, Sleep, Cast) ->
+init(Name, State, Sleep, Cast) ->
     Gui = gui:start(Name),
-    Manager ! {subscribe, Name},
     worker(Cast, Gui, State, Sleep).
 		% Cuando hace init, tiene que enviarle a su manager self y este eventualmente le contestara con su grupo de trabajo. Donde el mismo tambien esta.
 
+peers(Workers, Cast) ->
+    Cast ! {subscribe, Workers}.
 
 worker(Cast, Gui, State, Sleep) ->
 	% pasa a escuchar. Cuando llega su mensaje hace recursion actualizando el gui y vuelve a espera para volver a enviar.

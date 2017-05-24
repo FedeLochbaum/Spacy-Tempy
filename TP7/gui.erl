@@ -15,7 +15,7 @@ init(Name) ->
 
 new_window(Name) ->
 	Wx = wx:new(),
-	Window = wxFrame:new(Wx, -1, io_lib:format("~w", [Name])).
+	wxFrame:new(Wx, -1, io_lib:format("~w", [Name])).
 
 
 color(Window, Tuple) ->
