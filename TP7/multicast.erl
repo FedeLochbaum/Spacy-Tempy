@@ -1,8 +1,15 @@
 -module(multicast).
--export([server/6,start/3]).
+-export([server/6,start/2]).
 
-start(Jitter,Master,Nodes) ->
-  spawn(fun() -> server(Master,0,Nodes,maps:new(),maps:new(),Jitter) end).
+start(Jitter,Master) ->
+  spawn(fun() -> waiting(Master,0,maps:new(),maps:new(),Jitter) end).
+
+waiting(Master,Next,Cast,Queue,Jitter) ->
+  receive
+    {nodes, Nodes} ->
+      server(Master,Next,Nodes,Cast,Queue,Jitter)
+  end.
+
 
 server(Master,Next,Nodes,Cast,Queue,Jitter) ->
   receive
