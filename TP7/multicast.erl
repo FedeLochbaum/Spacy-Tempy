@@ -91,12 +91,15 @@ agreed(Next, Update) ->
   FunAgreeds = fun(K,_) ->
           K =< Next
         end,
+
   FunUpdate = fun(K,_) ->
           K > Next
         end,
 
+
   Agreeds = maps:filter(FunAgreeds,Update),
   Update2 = maps:filter(FunUpdate,Update),
+  % AgreedsList = maps:fold(FilterValue,[],Agreeds),
   {maps:to_list(Agreeds),Update2}.
 
 increment(Next, Seq) ->
@@ -105,7 +108,14 @@ increment(Next, Seq) ->
     false -> Next
   end.
 
-deliver(Agreed, Master) ->
-  lists:map(fun ({Msg,_}) ->
-							Master ! {msg, Msg}
-						end, Agreed).
+deliver([], Master) ->
+  ok;
+
+deliver([{H,Map}|Agreed], Master) ->
+    maps:map(fun(K,{Ref,Msg}) ->
+      Master ! {msg, Msg}
+    end,Map).
+  % lists:map(fun (Elem) ->
+  %               io:format("Elem es: ~w~n", [Elem]),
+  % 							Master ! {msg, Elem}
+  % 						end, maps:values(Head)).

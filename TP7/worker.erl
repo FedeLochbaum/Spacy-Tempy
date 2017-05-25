@@ -42,7 +42,7 @@ worker(Gui, State, Sleep, Cast) ->
             ok
         after Sleep ->
             Message = rand:uniform(20),
-            io:format("envio mensaje: ~w~n", [Message]),
+            %io:format("envio mensaje: ~w~n", [Message]),
 						Cast ! {send, Message},   % spawn(fun() -> sendMessage(Workers, Message) end),
             receiveMsg(Message, Gui, State,Sleep, Cast)
     end.
