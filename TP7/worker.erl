@@ -50,7 +50,7 @@ worker(Gui, State, Sleep, Cast) ->
 receiveMsg(Message, Gui, State,Sleep, Cast) ->
     receive
         {msg, Msg} ->
-			io:format("soy worker y me llego este mensaje: ~w~n", [Message]),
+						io:format("soy worker y me llego este mensaje: ~w~n", [Msg]),
 						Ntuple = color_change(Msg, State),
             Gui ! {color, Ntuple},
 						case Msg == Message of

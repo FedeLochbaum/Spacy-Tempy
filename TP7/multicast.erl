@@ -49,7 +49,7 @@ cast(Ref, Size, Cast) ->
   maps:put(Ref, {Size, 0}, Cast).
 
 insert(Next, Ref, Msg, Queue) ->
-  maps:put(Next,{Ref,Msg},Queue). % [{Next, Ref, Msg} | Queue].
+  maps:put(Next, {Ref,Msg}, Queue). % [{Next, Ref, Msg} | Queue].
 
 increment(Next) ->
   Next+1.
@@ -63,8 +63,10 @@ proposal(Ref, Proposal, Cast) ->
           Cast2 = maps:remove(Ref,Cast),
           {agreed, Max, Cast2};
         false ->
-          maps:put(Ref,{L-1,Max})
-      end
+          maps:put(Ref,{L-1,Max},Cast)
+      end;
+    error ->
+      ok
   end.
 
 agree(Ref,Seq,Nodes) ->
@@ -78,18 +80,21 @@ update(NewRef, Seq, Queue) ->
             true ->
               Max = max(K,Seq),
               maps:remove(K,Queue),
-              maps:put(Max,{Ref,M},Queue)
+              maps:put(Max,{Ref,M},Queue);
+            false ->
+              maps:put(K,{Ref,M},Queue)
           end
         end,
   maps:map(Fun,Queue).
 
 agreed(Next, Update) ->
-  FunAgreeds = fun(K,{_,_}) ->
+  FunAgreeds = fun(K,_) ->
           K =< Next
         end,
-  FunUpdate = fun(K,{_,_}) ->
+  FunUpdate = fun(K,_) ->
           K > Next
         end,
+
   Agreeds = maps:filter(FunAgreeds,Update),
   Update2 = maps:filter(FunUpdate,Update),
   {maps:to_list(Agreeds),Update2}.
@@ -101,6 +106,6 @@ increment(Next, Seq) ->
   end.
 
 deliver(Agreed, Master) ->
-  lists:map(fun ({_,Msg}) ->
+  lists:map(fun ({Msg,_}) ->
 							Master ! {msg, Msg}
 						end, Agreed).
