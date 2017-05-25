@@ -26,7 +26,7 @@ server(Master,Next,Nodes,Cast,Queue,Jitter) ->
       end;
     {agreed, Ref, Seq} ->
       Updated = update(Ref, Seq, Queue),
-      {Agreed, Queue2} = agreed(Seq, Updated),%no estoy seguro
+      {Agreed, Queue2} = agreed(Next, Updated),
       deliver(Agreed, Master),
       Next2 = increment(Next, Seq),
       server(Master, Next2, Nodes, Cast, Queue2, Jitter)
@@ -42,7 +42,7 @@ cast(Ref, Size, Cast) ->
   maps:put(Ref, {Size, 0}, Cast).
 
 insert(Next, Ref, Msg, Queue) ->
-  maps:put(Next,{Ref,Msg}). % [{Next, Ref, Msg} | Queue].
+  maps:put(Next,{Ref,Msg},Queue). % [{Next, Ref, Msg} | Queue].
 
 increment(Next) ->
   Next+1.
@@ -51,8 +51,8 @@ proposal(Ref, Proposal, Cast) ->
   case maps:find(Ref, Cast) of
     {ok, {L, Sofar} } ->
       Max = max(Sofar,Proposal),
-      if
-        L == 1 ->
+      case L == 1 of
+        true ->
           Cast2 = maps:remove(Ref,Cast),
           {agreed, Max, Cast2};
         false ->
@@ -65,13 +65,35 @@ agree(Ref,Seq,Nodes) ->
 							Node ! {agreed, Ref, Seq}
 						end, Nodes).
 
-update(Ref, Seq, Queue) ->
-  lists:map(fun ({Next,Ref,Msg}) ->
-              Max = max(Next,Seq),
-							{Max,Ref,Msg}
-						end, Queue).
+update(NewRef, Seq, Queue) ->
+  Fun = fun(K,{Ref,M}) ->
+          case NewRef == Ref of
+            true ->
+              Max = max(K,Seq),
+              maps:remove(K,Queue),
+              maps:put(Max,{Ref,M},Queue)
+          end
+        end,
+  maps:map(Fun,Queue).
 
-agreed(Seq, Update) ->
-  lists:filter(fun {Next,Ref,Msg} ->
-							Node ! {agreed, Ref, Seq}
-						end, Update).
+agreed(Next, Update) ->
+  FunAgreeds = fun(K,{_,_}) ->
+          K =< Next
+        end,
+  FunUpdate = fun(K,{_,_}) ->
+          K > Next
+        end,
+  Agreeds = maps:filter(FunAgreeds,Update),
+  Update2 = maps:filter(FunUpdate,Update),
+  {maps:to_list(Agreeds),Update2}.
+
+increment(Next, Seq) ->
+  case Next < Seq of
+    true -> max(Next,Seq) + 1;
+    false -> Next
+  end.
+
+deliver(Agreed, Master) ->
+  lists:map(fun ({_,Msg}) ->
+							Master ! {msg, Msg}
+						end, Agreed).
