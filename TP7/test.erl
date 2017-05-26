@@ -4,7 +4,7 @@
 
 start() ->
   worker:startManager(2000),
-  Sleep = 100,
+  Sleep = 1000,
   Jitter = 100,
   worker:start(w1,manager,Sleep,Jitter),
   worker:start(w2,manager,Sleep,Jitter),

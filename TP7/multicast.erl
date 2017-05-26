@@ -20,12 +20,14 @@ server(Master,Next,Nodes,Cast,Queue,Jitter) ->
       server(Master, Next, Nodes, Cast2, Queue, Jitter);
     {request, From, Ref, Msg} ->
       From ! {proposal, Ref, Next},
+      io:format("mi worker es ~w~n y mi propuesta es: ~w~n", [Master, Next]),
       Queue2 = insert(Next, Ref, Msg, Queue),
       Next2 = increment(Next),
       server(Master, Next2, Nodes, Cast, Queue2, Jitter);
     {proposal, Ref, Proposal} ->
       case proposal(Ref, Proposal, Cast) of
         {agreed, Seq, Cast2} ->
+          io:format("mi worker es ~w~n y el valor concensuado es: ~w~n", [Master, Seq]),
           agree(Ref,Seq,Nodes),
           server(Master, Next, Nodes, Cast2, Queue, Jitter);
         Cast2 ->

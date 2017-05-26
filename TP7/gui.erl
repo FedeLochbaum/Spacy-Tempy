@@ -19,7 +19,6 @@ new_window(Name) ->
 
 
 color(Window, Tuple) ->
-	io:format("Mi tupla es: ~w~n", [Tuple]),
 	wxFrame:setBackgroundColour(Window,Tuple).
 	%wxFrame:refresh(Window).
 

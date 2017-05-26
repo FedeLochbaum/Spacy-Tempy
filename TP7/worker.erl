@@ -28,34 +28,37 @@ init(Name, Manager, State, Sleep,Jitter) ->
     Manager ! {subscribe, Name, Jitter},
 		receive
 			{cast, MultiCast} ->
-				worker(Gui, State, Sleep, MultiCast)
+				worker(Name,Gui, State, Sleep, MultiCast)
 		end.
 
 
-worker(Gui, State, Sleep, Cast) ->
+worker(Name,Gui, State, Sleep, Cast) ->
     receive
         {msg, Msg} ->
-						Ntuple = color_change(Msg, State),
-						Gui ! {color, Ntuple},
-            worker(Gui, Ntuple, Sleep, Cast);
+						io:format("soy el worker ~w~n y me llego este mensaje: ~w~n", [Name,Msg]),
+						NTuple = color_change(Msg, State),
+						io:format("soy el worker ~w~n y mi tupla es: ~w~n", [Name,NTuple]),
+						Gui ! {color, NTuple},
+            worker(Name, Gui, NTuple, Sleep, Cast);
         stop ->
-            ok
+            Gui ! stop
         after Sleep ->
             Message = rand:uniform(20),
-            %io:format("envio mensaje: ~w~n", [Message]),
+            io:format("soy el worker ~w~n y envio este mensaje: ~w~n", [Name, Message]),
 						Cast ! {send, Message},   % spawn(fun() -> sendMessage(Workers, Message) end),
-            receiveMsg(Message, Gui, State,Sleep, Cast)
+            receiveMsg(Name, Message, Gui, State,Sleep, Cast)
     end.
 
-receiveMsg(Message, Gui, State,Sleep, Cast) ->
+receiveMsg(Name, Message, Gui, State,Sleep, Cast) ->
     receive
         {msg, Msg} ->
-						io:format("soy worker y me llego este mensaje: ~w~n", [Msg]),
-						Ntuple = color_change(Msg, State),
-            Gui ! {color, Ntuple},
+						io:format("soy el worker ~w~n y me llego este mensaje: ~w~n", [Name,Msg]),
+						NTuple = color_change(Msg, State),
+						io:format("Soy el worker ~w~n mi tupla es: ~w~n", [Name,NTuple]),
+            Gui ! {color, NTuple},
 						case Msg == Message of
-							true -> worker(Gui, State, Sleep, Cast);
-							false -> receiveMsg(Message, Gui, Ntuple,Sleep, Cast)
+							true -> worker(Name, Gui, NTuple, Sleep, Cast);
+							false -> receiveMsg(Name, Message, Gui, NTuple,Sleep, Cast)
 						end;
 				Bla ->
 						io:format("llego otra cosa: ~w~n", [Bla])
