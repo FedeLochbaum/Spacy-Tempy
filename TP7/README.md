@@ -29,7 +29,7 @@ Probando nuestro nuevo test, donde se utiliza multicasting de orden total y usan
 Para finalizar con nuestras pruebas, concluimos que el tiempo que tardan los multicastings (cada uno asignado a su Worker) para consensuar el número de secuencia de un mensaje es realmente insignificante. Por lo tanto, apreciamos que la tarea de consenso entre Multicasting y la de notificar que un mensaje puede ser enviado sucede realmente muy rápido.
 
 
-![Ventanas sincronizadas](https://gitlab.com/trimegisto/sistemas_distribuidos/tree/master/TP7/windows.jpeg)
+![Ventanas sincronizadas](windows.png)
 
 
 #### 2. Tenemos muchos mensajes en el sistema, ¿Cuantos mensajes podemos hacer multicast por segundo y como depende esto del número de workers?
