@@ -31,7 +31,10 @@ Para finalizar con nuestras pruebas, concluimos que el tiempo que tardan los mul
 
 
 #### 2. Tenemos muchos mensajes en el sistema, ¿Cuántos mensajes podemos hacer multicast por segundo y cómo depende esto del número de workers?
-Cuando un proceso Worker hace un multicast de un mensaje, este lo libera inmediatamente porque no hay más mensajes para enviar, pero si 2 o más procesos Worker hacen el envío, tendrá una espera para enviarlos debido a que los mantiene en una región de espera y los enviará hasta liberar los demás.
+
+En principio, para poder saber con precisión que cantidad de mensajes se envían por segundo, es necesario crear un test un tanto más robusto y consistente. A falta de este test, basamos nuestra respuesta en la experiencia obtenida luego de haber corrido nuestras muchas pruebas anteriormente. Habiendo dicho esto, podemos decir que la cantidad de mensajes por segundo es realmente muy grande y que este número no es notablemente limitado por la cantidad de Workers. Además, cada Worker envía su mensaje a su propio Multicasting y este inmediatamente le pide a sus pares una propuesta. Como el consenso se hace de manera distribuida, ningún Multicasting tiene sobrecarga de datos y permite recibir otro envío de mensaje de su Worker sin retraso.
+
+Aun así, si cada Worker tiene asignado un único Multicasting, por lo tanto, la realización del consenso será de orden N, donde N es la cantidad de Multicasting que deben ponerse de acuerdo, es decir, la cantidad de Workers. Esto nos indica que, si existe un leve crecimiento de tiempo en el consenso si la cantidad de Workers es mayor.
 
 
 #### 3. Construir una red distribuida, ¿cuán grande puede ser antes de que empiece a fallar?
