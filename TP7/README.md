@@ -2,25 +2,32 @@
 
 ### 2.3. Experimento
 
-#### 1. Analizar que pasa si tenemos un sistema que se basa en una entrega con orden total pero esto no fue claramente establecido. ¿Si la congestión es baja y no tenemos retrasos en la red, cuánto tiempo tarda antes de que los mensajes se entreguen fuera de orden? 
+#### 1. Analizar que pasa si tenemos un sistema que se basa en una entrega con orden total pero esto no fue claramente establecido. ¿Si la congestión es baja y no tenemos retrasos en la red, cuánto tiempo tarda antes de que los mensajes se entreguen fuera de orden?
 Como ejemplo en el libro vemos que el efecto de pérdida de mensajes y la inconsitencia de ordenamiento puede depender del método de replicación y la importancia de que todas las réplicas estén actualizadas.
-El ancho de banda consumido, es proporcional número de mensajes enviados en cada operación de entrada y salida.
+El ancho de banda consumido, es proporcional al número de mensajes enviados en cada operación de entrada y salida.
 
-Entonces podemos decir que entre más mensajes se estén enviando los Workers, el Cast incrementará su capacidad para almacenar y distribuir los datos a cada uno. El tiempo ha estimar también dependería del tiempo que tiene cada Worker en el envío de sus mensajes, entre más corto el tiempo, el Cast se congestionará de mensajes y este podría enviar mensajes fuera de orden.
+Entonces podemos decir que entre más mensajes se estén enviando los Workers, el Cast incrementará su capacidad para almacenar y distribuir los datos a cada uno. El tiempo ha estimar también dependera del tiempo que tiene cada Worker en el envío de sus mensajes, entre más corto el tiempo, el Cast se congestionará de mensajes y este podría enviar mensajes fuera de orden.
 
 
 #### 2. ¿Cuán difícil es hacer debug del sistema y darnos cuenta que es lo que está mal?
-Para checar si funciona correctamente, lo que hicimos fue incrementar el número de Workers y así podemos ver si los mensajes se entregan a tiempo y en orden para cada uno de los Workers.
-Lo que hicimos para mostrar donde estamos mal fueron hacer pruebas, cambiando parámteros de Sleep de los Worker, el número de Workers, el Jitter para el envío de mensajes del Cast.
-	
+Para verificar el correcto funcionamiento del multicast basico, lo que hicimos fue incrementar el número de Workers en las pruebas establecidas y así poder ver si los mensajes se entregan en tiempo y orden para cada uno de ellos.
+
+Al tratarse de un sistema multicast donde, todos los nodos de una red, envían mensajes y al mismo tiempo escuchan, es difícil encontrar la fuente de un error si el sistema falla. Esto se debe a que es difícil de distinguir que worker es el que envió un mensaje que puede o no llegar de manera incorrecta.
+
+En un principio para encontrar y validar los problemas de nuestro test, utilizamos una pequeña cantidad de Workers, esto simplificó notablemente la búsqueda de un fallo. Además, decidimos imprimir por pantalla la identidad de cada worker cuando este actualizaba su vista, permitiéndonos seguir de manera secuencial los diferentes sucesos.
+
+Finalmente, aprovechamos el Sleep y Jitter para comprobar el completo funcionamiento. Ya que estos afectan de manera significativa la performance del sistema, vimos que eligiendo un Sleep y Jitter muy pequeño la probabilidad de desincronización era muy alta.
 
 
 ### 4. Experimentos
 
 #### 1. Probar usando el multicaster de orden total. ¿Mantiene los workers sincronizados?
-Si los mantiene sincronizados, hay integridad en los envíos de mensajes esto es porque los mensajes se mantienen en orden en que hacen la petición para el cast, y estos se van liberando uno a uno para todos los Workers.
+Habiendo implementado el algoritmo ISIS propuesto por el trabajo, vemos que los Workers se mantienen sincronizados y hay integridad en los envíos de mensajes, es decir, que los mensajes se mantienen en orden en que se hace la petición para el multicast, estos se van liberando uno a uno para cada uno de los Workers.
 
-Los colores que muestran las ventanas al correr el test son iguales, la implementacion del módulo multicast con orden total nos garantiza que todos los mensajes de multicast están ordenados de acuerdo a los workers.
+Probando nuestro nuevo test, donde se utiliza multicasting de orden total y usando en el mismo un Sleep/Jitter muy pequeños con una cantidad considerable de Workers, notamos que la sincronización entre estos últimos es muy alta, al punto en que cada ventana que perteneciente a un Worker distinto muestra el color en común. A pesar de esta gran sincronización, existe una posibilidad, tal vez, por algún error en algún indice de nuestro código en que un solo mensaje llega fuera de orden, por lo que una pantalla muestra levemente una diferencia de color con respecto al resto. Como dijimos esta posibilidad es muy pequeña, donde podemos afirmar que sucede una vez por cada 10000 mensajes aproximadamente.
+
+Para finalizar con nuestras pruebas, concluimos que el tiempo que tardan los multicastings (cada uno asignado a su Worker) para consensuar el número de secuencia de un mensaje es realmente insignificante. Por lo tanto, apreciamos que la tarea de consenso entre Multicasting y la de notificar que un mensaje puede ser enviado sucede realmente muy rápido.
+
 
 
 #### 2. Tenemos muchos mensajes en el sistema, ¿Cuántos mensajes podemos hacer multicast por segundo y cómo depende esto del número de workers?
