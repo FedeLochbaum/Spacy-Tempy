@@ -28,7 +28,7 @@ Probando nuestro nuevo test, donde se utiliza multicasting de orden total y usan
 
 Para finalizar con nuestras pruebas, concluimos que el tiempo que tardan los multicastings (cada uno asignado a su Worker) para consensuar el número de secuencia de un mensaje es realmente insignificante. Por lo tanto, apreciamos que la tarea de consenso entre Multicasting y la de notificar que un mensaje puede ser enviado sucede realmente muy rápido.
 
-####Imagen de Multicasting en funcionamiento:
+#### Imagen de Multicasting en funcionamiento:
 
 <img src="windows.png" width="450" height="400">
 <!-- ![Ventanas-sincronizadas](windows.png){:height="36px" width="36px"}. -->
