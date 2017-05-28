@@ -28,8 +28,10 @@ Probando nuestro nuevo test, donde se utiliza multicasting de orden total y usan
 
 Para finalizar con nuestras pruebas, concluimos que el tiempo que tardan los multicastings (cada uno asignado a su Worker) para consensuar el número de secuencia de un mensaje es realmente insignificante. Por lo tanto, apreciamos que la tarea de consenso entre Multicasting y la de notificar que un mensaje puede ser enviado sucede realmente muy rápido.
 
+####Imagen de Multicasting en funcionamiento:
 
-![Ventanas sincronizadas](windows.png)
+<img src="windows.png" width="450" height="400">
+<!-- ![Ventanas-sincronizadas](windows.png){:height="36px" width="36px"}. -->
 
 
 #### 2. Tenemos muchos mensajes en el sistema, ¿Cuantos mensajes podemos hacer multicast por segundo y como depende esto del número de workers?
@@ -46,6 +48,6 @@ Los sistemas distribuidos tienen una gran ventaja sobre los sistemas centralizad
 Una red distribuida tiene capacidad de crecimiento incremental, es decir se puede añadir más procesamiento al sistema incrementando su pontencia en forma gradual según las necesidades. Entonces puede ser tan grande como sea necesario, claramente es necesario que el sistema funcione correctamente, es decir que las fallas no sean por lógica o implementación, sino que puede fallar por pérdida de mensajes, saturación en tráfico, etc.
 
 
-### *Nota
+### Nota
 Las respuesta escritas en este informe fueron verificadas con el capítulo del libro correspondiente al trabajo (DISTRIBUTED SYSTEMS
 Concepts and Design Fifth Edition - 4.4 Multicast communication).
