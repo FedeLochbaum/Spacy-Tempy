@@ -4,11 +4,51 @@
 
 start(N) ->
   server:start(server),
-  Sleep = 1000,
-  generateNodes(N,server,Sleep).
+  Sleep = 5000,
+  generateNodes(N,server,Sleep),
+  generateQueries(server,N, Sleep),
+  stop(N).
 
 
-generateNodes(0,Server,Sleep) ->
+generateQueries(_,0,_) ->
+  ok;
+
+generateQueries(Server,N,TimeSleep) ->
+  Time = rand:uniform(TimeSleep),
+  Name = list_to_atom("node" ++ integer_to_list(N)),
+  Query = rand:uniform(4),
+  sendQuery(Server,Name, Query),
+  receive
+    {reply, Reply} ->
+      io:format("Reply : ~w~n", [Reply]),
+      timer:sleep(Time),
+      generateQueries(Server, N-1, TimeSleep)
+  end.
+
+
+sendQuery(Server, _, 1) ->
+  X = rand:uniform(100),
+  Y = rand:uniform(100),
+  Instant = rand:uniform(node:timeNow()),
+  Server ! {timelapse, {X, Y}, Instant, self()};
+
+sendQuery(Server, _, 2) ->
+  X  = rand:uniform(100),
+  Y  = rand:uniform(100),
+  Tk = rand:uniform(node:timeNow()),
+  Ti = rand:uniform(node:timeNow()) - Tk,
+  Server ! {interval, {X, Y}, {Ti,Tk}, self()};
+
+sendQuery(Server, _, 3) ->
+  X = rand:uniform(100),
+  Y = rand:uniform(100),
+  Server ! {event, {X,Y}, self()};
+
+sendQuery(Server, Name, 4) ->
+  Server ! {track, Name, self()}.
+
+
+generateNodes(0,_,_) ->
   ok;
 
 generateNodes(N,Server,Sleep) ->
@@ -18,7 +58,7 @@ generateNodes(N,Server,Sleep) ->
 
 
 stop(0) ->
-  node:stop(server);
+  server:stop(server);
 
 stop(N) ->
   Name = list_to_atom("node" ++ integer_to_list(N)),
