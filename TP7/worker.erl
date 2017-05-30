@@ -35,16 +35,16 @@ init(Name, Manager, State, Sleep,Jitter) ->
 worker(Name,Gui, State, Sleep, Cast) ->
     receive
         {msg, Msg} ->
-						io:format("soy el worker ~w~n y me llego este mensaje: ~w~n", [Name,Msg]),
+						io:format("soy el worker y me llego este mensaje: ~w ~p~n", [Name,Msg]),
 						NTuple = color_change(Msg, State),
-						io:format("soy el worker ~w~n y mi tupla es: ~w~n", [Name,NTuple]),
+						io:format("soy el worker y mi tupla es: ~w ~p~n", [Name,NTuple]),
 						Gui ! {color, NTuple},
             worker(Name, Gui, NTuple, Sleep, Cast);
         stop ->
             Gui ! stop
         after Sleep ->
             Message = rand:uniform(20),
-            io:format("soy el worker ~w~n y envio este mensaje: ~w~n", [Name, Message]),
+            io:format("soy el worker y envio este mensaje: ~w ~p~n", [Name, Message]),
 						Cast ! {send, Message},   % spawn(fun() -> sendMessage(Workers, Message) end),
             receiveMsg(Name, Message, Gui, State,Sleep, Cast)
     end.
@@ -52,9 +52,9 @@ worker(Name,Gui, State, Sleep, Cast) ->
 receiveMsg(Name, Message, Gui, State,Sleep, Cast) ->
     receive
         {msg, Msg} ->
-						io:format("soy el worker ~w~n y me llego este mensaje: ~w~n", [Name,Msg]),
+						io:format("soy el worker y me llego este mensaje: ~w ~p~n", [Name,Msg]),
 						NTuple = color_change(Msg, State),
-						io:format("Soy el worker ~w~n mi tupla es: ~w~n", [Name,NTuple]),
+						io:format("Soy el worker mi tupla es: ~w ~p~n", [Name,NTuple]),
             Gui ! {color, NTuple},
 						case Msg == Message of
 							true -> worker(Name, Gui, NTuple, Sleep, Cast);
