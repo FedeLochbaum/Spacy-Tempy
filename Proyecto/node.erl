@@ -8,29 +8,30 @@ stop(Node) ->
   Node ! stop.
 
 init(Name, Server, Sleep) ->
-  Instant = timeNow(),
+  Time = timeNow(),
   X = rand:uniform(100),
   Y = rand:uniform(100),
 
-  Server ! {subscribe, Name, {X, Y}, Instant},
+  Server ! {subscribe, Name, {X, Y}, Time},
   receive
     ok ->
-      loop(Name, Server, Sleep, {X,Y}, Instant);
+      loop(Name, Server, Sleep, {X,Y}, Time);
     stop ->
       ok
   end.
 
-loop(Name, Server, Sleep, {X,Y}, Instant) ->
-  io:format("log: ~w ~w ~p~n", [Name, {X,Y}, Instant]),
+loop(Name, Server, Sleep, {X,Y}, Time) ->
+  io:format("log: ~w ~w ~p~n", [Name, {X,Y}, Time]),
   XMove = rand:uniform(10),
   YMove = rand:uniform(10),
-  Time = timeNow() - Instant,
-  Server ! {move, Name, {XMove, YMove}, Time},
+  Time2 = timeNow(),
+  NewInstant = Time2 - Time,
+  Server ! {move, Name, {XMove, YMove}, NewInstant},
   receive
     stop ->
       ok
     after Sleep ->
-      loop(Name, Server, Sleep, {X+XMove, Y+YMove}, Time)
+      loop(Name, Server, Sleep, {X+XMove, Y+YMove}, Time2)
   end.
 
 

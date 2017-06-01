@@ -37,19 +37,19 @@ move(Pid, {X,Y}, Instant, {Rtree, Map, {Last,LastTuple}}) ->
 
 timelapse_query(Region, Instant, {Rtree, Map, {Last,LastTuple}}) ->
   % NOT IMPLEMENTED
-  [].
+  Rtree.
 
 interval_query(Region, {Ti,Tk}, {Rtree, Map, {Last,LastTuple}}) ->
   % NOT IMPLEMENTED
-  [].
+  Rtree.
 
 event_query(Region, {Rtree, Map, {Last,LastTuple}}) ->
   % NOT IMPLEMENTED
-  [].
+  Rtree.
 
 track_query(Pid, {Rtree, Map, {Last,LastTuple}}) ->
   % NOT IMPLEMENTED
-  [].
+  Rtree.
 
 updateLast({Pid,Tuple},{Last,{Mbr,T,P3d,Pa,_}},Map) ->
   maps:put(Last,{Mbr,T,P3d,Pa,Tuple},Map).
