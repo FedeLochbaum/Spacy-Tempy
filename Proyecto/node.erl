@@ -24,12 +24,13 @@ loop(Name, Server, Sleep, {X,Y}, Instant) ->
   io:format("log: ~w ~w ~p~n", [Name, {X,Y}, Instant]),
   XMove = rand:uniform(10),
   YMove = rand:uniform(10),
-  Server ! {move, Name, {XMove, YMove}, timeNow()},
+  Time = timeNow() - Instant,
+  Server ! {move, Name, {XMove, YMove}, Time},
   receive
     stop ->
       ok
     after Sleep ->
-      loop(Name, Server, Sleep, {X+XMove, Y+YMove}, timeNow())
+      loop(Name, Server, Sleep, {X+XMove, Y+YMove}, Time)
   end.
 
 
