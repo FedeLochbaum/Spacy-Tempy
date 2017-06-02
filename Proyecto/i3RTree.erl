@@ -20,7 +20,7 @@ unsubscribe(Pid, {Rtree, Map, {Last,LastTuple}} ) ->
   {Rtree, Map, {Last,LastTuple}}.
 
 move(Pid, {X,Y}, Instant, {Rtree, Map, {Last,LastTuple}}) ->
-  % inicio actualizar el map,
+
   Mbr = {X, Y, Instant},
   Pa = LastTuple,
   {{XOld, YOld, InstantOld}, InstantOld, P3dOld, PaOld, PsOld} = maps:get(Pid,Map),
@@ -30,11 +30,10 @@ move(Pid, {X,Y}, Instant, {Rtree, Map, {Last,LastTuple}}) ->
   Tuple = {Mbr, Instant, P3d, Pa, 0},
 
   NMap = updateLast({Pid,Tuple},{Last,LastTuple},Map),
-  % fin actualizar map
-  % inicio actualizar Rtree
-  Point = rstar_geometry:point3d(XOld, YOld, Time, P3d),
+
+  Point = rstar_geometry:point3d(XOld, YOld, Time, P3dOld),
   NewRtree = rstar:insert(Rtree, Point),
-  % fin actualizar Rtree
+
   {NewRtree, NMap, {Pid,Tuple}}.
 
 timelapse_query({X,Y}, Instant, {Rtree, Map, {Last,LastTuple}}) ->
