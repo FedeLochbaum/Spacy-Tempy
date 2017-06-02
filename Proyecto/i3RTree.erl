@@ -21,27 +21,29 @@ unsubscribe(Pid, {Rtree, Map, {Last,LastTuple}} ) ->
 
 move(Pid, {X,Y}, Instant, {Rtree, Map, {Last,LastTuple}}) ->
   % inicio actualizar el map,
+  Mbr = {X, Y, Instant},
+  Pa = LastTuple,
   {{XOld, YOld, InstantOld}, InstantOld, P3dOld, PaOld, PsOld} = maps:get(Pid,Map),
 
-  Mbr = {X, Y, Instant},
-  P3d = {Pid, {XOld, YOld, InstantOld}, P3dOld},
-  Pa = LastTuple,
+  Time = (Instant - InstantOld),
+  P3d = {Pid, {XOld, YOld, Time}, P3dOld},
   Tuple = {Mbr, Instant, P3d, Pa, 0},
+
   NMap = updateLast({Pid,Tuple},{Last,LastTuple},Map),
   % fin actualizar map
   % inicio actualizar Rtree
-  Point = rstar_geometry:point3d(XOld, YOld, InstantOld, P3d),
+  Point = rstar_geometry:point3d(XOld, YOld, Time, P3d),
   NewRtree = rstar:insert(Rtree, Point),
   % fin actualizar Rtree
   {NewRtree, NMap, {Pid,Tuple}}.
 
-timelapse_query(Region, Instant, {Rtree, Map, {Last,LastTuple}}) ->
-  % NOT IMPLEMENTED
-  Rtree.
+timelapse_query({X,Y}, Instant, {Rtree, Map, {Last,LastTuple}}) ->
+  Point = rstar_geometry:point3d(X, Y, Instant, ok),
+  rstar:search_around(Rtree, Point, 0.0).
 
-interval_query(Region, {Ti,Tk}, {Rtree, Map, {Last,LastTuple}}) ->
-  % NOT IMPLEMENTED
-  Rtree.
+interval_query({X,Y}, {Ti,Tk}, {Rtree, Map, {Last,LastTuple}}) ->
+  Box = rstar_geometry:new(3, [{X, X}, {Y, Y}, {Ti,Tk}], ok),
+  rstar:search_within(Rtree, Box).
 
 event_query(Region, {Rtree, Map, {Last,LastTuple}}) ->
   % NOT IMPLEMENTED

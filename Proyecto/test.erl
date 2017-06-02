@@ -29,15 +29,15 @@ generateQueries(Server,N,TimeSleep) ->
 sendQuery(Server, _, 1) ->
   X = rand:uniform(100),
   Y = rand:uniform(100),
-  Instant = rand:uniform(node:timeNow()),
+  Instant = rand:uniform(server:timeNow()),
   Server ! {timelapse, {X, Y}, Instant, self()};
 
 sendQuery(Server, _, 2) ->
   X  = rand:uniform(100),
   Y  = rand:uniform(100),
-  Tk = rand:uniform(node:timeNow()),
-  Ti = rand:uniform(node:timeNow()) - Tk,
-  Server ! {interval, {X, Y}, {Ti,Tk}, self()};
+  Tk = rand:uniform(server:timeNow()),
+  Ti = rand:uniform(server:timeNow()),
+  Server ! {interval, {X, Y}, {min(Ti,Tk),max(Ti,Tk)}, self()};
 
 sendQuery(Server, _, 3) ->
   X = rand:uniform(100),

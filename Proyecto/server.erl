@@ -1,5 +1,5 @@
 -module(server).
--export([start/1,stop/1]).
+-export([start/1,stop/1,timeNow/0]).
 -import(rstar, [rstar/1]).
 
 start(Name) ->
@@ -10,16 +10,16 @@ Server ! stop.
 
 server(I3Rtree) ->
   receive
-    {subscribe, Pid, {X, Y}, Instant} ->
-      NRtree = i3RTree:subscribe(Pid, {X, Y}, Instant, I3Rtree),
+    {subscribe, Pid, {X, Y}} ->
+      NRtree = i3RTree:subscribe(Pid, {X, Y}, timeNow(), I3Rtree),
       Pid ! ok,
       server(NRtree);
     {unsubscribe, Pid} ->
       NRtree = i3RTree:unsubscribe(Pid, I3Rtree),
       Pid ! ok,
       server(NRtree);
-    {move, Pid, {X, Y}, Instant} ->
-      NRtree = i3RTree:move(Pid, {X,Y}, Instant, I3Rtree),
+    {move, Pid, {X, Y}} ->
+      NRtree = i3RTree:move(Pid, {X,Y}, timeNow(), I3Rtree),
       server(NRtree);
     {timelapse, Region, Instant, Process} -> % distribuido
       spawn(fun() -> timelapse_query(Region, Instant, Process, I3Rtree) end),
@@ -40,10 +40,12 @@ server(I3Rtree) ->
 
 timelapse_query(Region, Instant, Process, I3Rtree) ->
   Reply = i3RTree:timelapse_query(Region, Instant, I3Rtree),
+  io:format("Query timeLapse: ~w ~w~n", [Instant, Reply]),
   Process ! {reply, Reply}.
 
 interval_query(Region, {Ti,Tk}, Process, I3Rtree) ->
   Reply = i3RTree:interval_query(Region, {Ti,Tk}, I3Rtree),
+  io:format("Query interval: ~w ~w ~w~n", [Region, {Ti,Tk} ,Reply]),
   Process ! {reply, Reply}.
 
 event_query(Region, Process, I3Rtree) ->
@@ -53,3 +55,8 @@ event_query(Region, Process, I3Rtree) ->
 track_query(Pid, Process, I3Rtree) ->
   Reply = i3RTree:track_query(Pid, I3Rtree),
   Process ! {reply, Reply}.
+
+
+timeNow() ->
+  {H, M, S} = erlang:time(),
+  H * 3600 + M * 60 + S.
