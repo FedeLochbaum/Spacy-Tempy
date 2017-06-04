@@ -20,7 +20,6 @@ unsubscribe(Pid, {Rtree, Map, {Last,LastTuple}} ) ->
   {Rtree, Map, {Last,LastTuple}}.
 
 move(Pid, {X,Y}, Instant, {Rtree, Map, {Last,LastTuple}}) ->
-
   Mbr = {X, Y, Instant},
   Pa = LastTuple,
   {{XOld, YOld, InstantOld}, InstantOld, P3dOld, PaOld, PsOld} = maps:get(Pid,Map),
@@ -31,14 +30,62 @@ move(Pid, {X,Y}, Instant, {Rtree, Map, {Last,LastTuple}}) ->
 
   NMap = updateLast({Pid,Tuple},{Last,LastTuple},Map),
 
-  Point = rstar_geometry:point3d(XOld, YOld, Time, P3dOld),
+  Point = rstar_geometry:point3d(XOld, YOld, InstantOld, P3dOld),  % Por ahora tiene el tiempo fijo en el tree
   NewRtree = rstar:insert(Rtree, Point),
-
-  {NewRtree, NMap, {Pid,Tuple}}.
+  {NewRtree, maps:put(Pid,Tuple,NMap), {Pid,Tuple}}.
 
 timelapse_query({X,Y}, Instant, {Rtree, Map, {Last,LastTuple}}) ->
-  Point = rstar_geometry:point3d(X, Y, Instant, ok),
-  rstar:search_around(Rtree, Point, 0.0).
+  case Instant > tMax3D(Rtree) of
+    true ->
+      Res = lookUpInMap(X,Y,Instant,Map);
+    false ->
+      Region = rstar_geometry:new(3, [{X, X}, {Y, Y}, {Instant, Instant}], ok),
+      case Instant < tMinInd(Map) of
+        true ->
+          Res = rstar:search_within(Rtree,Region);
+        false ->
+          ResLookUp = lookUpInMap(X,Y,Instant,Map),
+          ResSearch = rstar:search_within(Rtree,Region),
+          Res = ResLookUp ++ ResSearch
+      end
+  end,
+  Res.
+
+lookUpInMap(X, Y, Instant, Map) ->
+  [FirstKey | Tail] = maps:keys(Map),
+  First = maps:get(FirstKey,Map),
+  Fun = fun(K,{Mbr, Time, P3d, Pa, Ps}, Acc) ->
+          if
+            Time =< Instant ->
+              case isPart(Mbr, X, Y) of
+                true -> Res = lists:append([Acc,[{Mbr, Time, P3d, Pa, Ps}]]);
+                false -> Res = Acc
+              end;
+            true -> Res = Acc
+          end,
+          Res
+        end,
+
+  maps:fold(Fun, [], Map).
+
+isPart(0, X, Y) ->
+  false;
+
+isPart({X0, Y0, _}, X, Y) ->
+  X0 =< X andalso Y0 =< Y.
+
+tMax3D({_,_,_,{geometry,3,[_,_,{_,TMax}],_}}) ->
+  TMax.
+
+tMinInd(Map) ->
+  Fun = fun(K,{Mbr, Time, P3d, Pa, Ps}, Acc) ->
+          case Acc > Time of
+            true -> Res = Time;
+            false -> Res = Acc
+          end,
+          Res
+        end,
+  maps:fold(Fun, inf, Map).
 
 interval_query({X,Y}, {Ti,Tk}, {Rtree, Map, {Last,LastTuple}}) ->
   Box = rstar_geometry:new(3, [{X, X}, {Y, Y}, {Ti,Tk}], ok),

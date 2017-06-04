@@ -8,8 +8,8 @@ stop(Node) ->
   Node ! stop.
 
 init(Name, Server, Sleep) ->
-  X = rand:uniform(100),
-  Y = rand:uniform(100),
+  X = rand:uniform(10),
+  Y = rand:uniform(10),
 
   Server ! {subscribe, Name, {X, Y}},
   receive

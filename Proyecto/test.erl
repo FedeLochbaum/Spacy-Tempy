@@ -6,8 +6,8 @@ start(N) ->
   server:start(server),
   Sleep = 5000,
   generateNodes(N,server,Sleep),
-  generateQueries(server,N, Sleep),
-  stop(N).
+  generateQueries(server,N, Sleep).
+  %stop(N).
 
 
 generateQueries(_,0,_) ->
@@ -15,13 +15,13 @@ generateQueries(_,0,_) ->
 
 generateQueries(Server,N,TimeSleep) ->
   Time = rand:uniform(TimeSleep),
+  timer:sleep(Time),
   Name = list_to_atom("node" ++ integer_to_list(N)),
   Query = rand:uniform(4),
   sendQuery(Server,Name, Query),
   receive
     {reply, Reply} ->
       io:format("Reply : ~w~n", [Reply]),
-      timer:sleep(Time),
       generateQueries(Server, N-1, TimeSleep)
   end.
 
