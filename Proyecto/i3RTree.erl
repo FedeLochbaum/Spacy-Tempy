@@ -20,6 +20,7 @@ unsubscribe(Pid, {Rtree, Map, {Last,LastTuple}} ) ->
   {Rtree, Map, {Last,LastTuple}}.
 
 move(Pid, {X,Y}, Instant, {Rtree, Map, {Last,LastTuple}}) ->
+  io:format("Move : ~w~n", [Instant]),
   Mbr = {X, Y, Instant},
   Pa = LastTuple,
   {{XOld, YOld, InstantOld}, InstantOld, P3dOld, PaOld, PsOld} = maps:get(Pid,Map),
@@ -32,24 +33,38 @@ move(Pid, {X,Y}, Instant, {Rtree, Map, {Last,LastTuple}}) ->
 
   Point = rstar_geometry:point3d(XOld, YOld, InstantOld, P3dOld),  % Por ahora tiene el tiempo fijo en el tree
   NewRtree = rstar:insert(Rtree, Point),
+  io:format("Finaly Move : ~w~n", [NewRtree]),
   {NewRtree, maps:put(Pid,Tuple,NMap), {Pid,Tuple}}.
 
 timelapse_query({X,Y}, Instant, {Rtree, Map, {Last,LastTuple}}) ->
-  case Instant > tMax3D(Rtree) of
+  interval_query({X,Y}, {Instant,Instant}, {Rtree, Map, {Last,LastTuple}}).
+
+
+interval_query({X,Y}, {Ti,Tk}, {Rtree, Map, {Last,LastTuple}}) ->
+  case Ti > tMax3D(Rtree) of
     true ->
-      Res = lookUpInMap(X,Y,Instant,Map);
+      Res = lookUpInMap(X,Y,Ti,Map);
     false ->
-      Region = rstar_geometry:new(3, [{X, X}, {Y, Y}, {Instant, Instant}], ok),
-      case Instant < tMinInd(Map) of
+      Region = rstar_geometry:new(3, [{X, X}, {Y, Y}, {Ti, Tk}], ok),
+      case Ti < tMinInd(Map) of
         true ->
           Res = rstar:search_within(Rtree,Region);
         false ->
-          ResLookUp = lookUpInMap(X,Y,Instant,Map),
+          ResLookUp = lookUpInMap(X,Y,Ti,Map),
           ResSearch = rstar:search_within(Rtree,Region),
           Res = ResLookUp ++ ResSearch
       end
   end,
   Res.
+
+event_query(Region, {Rtree, Map, {Last,LastTuple}}) ->
+  % NOT IMPLEMENTED
+  Rtree.
+
+track_query(Pid, {Rtree, Map, {Last,LastTuple}}) ->
+  % NOT IMPLEMENTED
+  Rtree.
+
 
 lookUpInMap(X, Y, Instant, Map) ->
   [FirstKey | Tail] = maps:keys(Map),
@@ -86,18 +101,6 @@ tMinInd(Map) ->
           Res
         end,
   maps:fold(Fun, inf, Map).
-
-interval_query({X,Y}, {Ti,Tk}, {Rtree, Map, {Last,LastTuple}}) ->
-  Box = rstar_geometry:new(3, [{X, X}, {Y, Y}, {Ti,Tk}], ok),
-  rstar:search_within(Rtree, Box).
-
-event_query(Region, {Rtree, Map, {Last,LastTuple}}) ->
-  % NOT IMPLEMENTED
-  Rtree.
-
-track_query(Pid, {Rtree, Map, {Last,LastTuple}}) ->
-  % NOT IMPLEMENTED
-  Rtree.
 
 updateLast({Pid,Tuple},{Last,{Mbr,T,P3d,Pa,_}},Map) ->
   maps:put(Last,{Mbr,T,P3d,Pa,Tuple},Map).
