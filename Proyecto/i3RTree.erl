@@ -14,9 +14,18 @@ subscribe(Pid, {X, Y}, Instant, {Rtree, Map, {Last,LastTuple}}) ->
   NMap = updateLast({Pid,Tuple},{Last,LastTuple},Map),
   {Rtree, maps:put(Pid,Tuple,NMap),{Pid,Tuple}}.
 
-unsubscribe(Pid, {Rtree, Map, {Last,LastTuple}} ) ->
-  % NOT IMPLEMENTED
-  {Rtree, Map, {Last,LastTuple}}.
+unsubscribe(Pid, {Rtree, Map, {Last,{Mbr, Instant, P3d, Pa, Ps}}} ) ->
+  case Pid  == Last of
+    true ->
+      {MbrOld, InstantOld, {PidOld, MbrOldOld, P3dOld}, PaOld, PsOld} = Pa,
+      NewLast = PidOld,
+      NewLastTuple = Pa;
+    false ->
+      NewLast = Last,
+      NewLastTuple = {Mbr, Instant, P3d, Pa, Ps}
+  end,
+  NMap = maps:remove(Last,Map),
+  {Rtree, NMap, {NewLast,NewLastTuple}}.
 
 move(Pid, {X,Y}, Instant, {Rtree, Map, {Last,LastTuple}}) ->
   io:format("Move : ~w~n", [Instant]),
