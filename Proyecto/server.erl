@@ -27,8 +27,8 @@ server(I3Rtree) ->
     {interval, Region, {Ti,Tk}, Process} -> % distribuido
       spawn(fun() -> interval_query(Region, {Ti,Tk}, Process, I3Rtree) end),
       server(I3Rtree);
-    {event, Region, Process} -> % distribuido
-      spawn(fun() -> event_query(Region, Process, I3Rtree) end),
+    {event, RegionMin, RegionMax, Process} -> % distribuido
+      spawn(fun() -> event_query(RegionMin, RegionMax, Process, I3Rtree) end),
       server(I3Rtree);
     {track, Pid, Process} -> % distribuido
       spawn(fun() -> track_query(Pid, Process, I3Rtree) end),
@@ -48,12 +48,14 @@ interval_query(Region, {Ti,Tk}, Process, I3Rtree) ->
   io:format("Query interval: ~w ~w ~w~n", [Region, {Ti,Tk} ,Reply]),
   Process ! {reply, Reply}.
 
-event_query(Region, Process, I3Rtree) ->
-  Reply = i3RTree:event_query(Region, I3Rtree),
+event_query(RegionMin, RegionMax, Process, I3Rtree) ->
+  Reply = i3RTree:event_query(RegionMin, RegionMax, I3Rtree),
+  io:format("Query event: ~w ~w ~w~n", [RegionMin, RegionMax ,Reply]),
   Process ! {reply, Reply}.
 
 track_query(Pid, Process, I3Rtree) ->
   Reply = i3RTree:track_query(Pid, I3Rtree),
+  io:format("Query track: ~w ~w~n", [Pid, Reply]),
   Process ! {reply, Reply}.
 
 

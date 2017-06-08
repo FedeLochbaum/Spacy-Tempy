@@ -6,8 +6,8 @@ start(N) ->
   server:start(server),
   Sleep = 5000,
   generateNodes(N,server,Sleep),
-  generateQueries(server,N, Sleep).
-  %stop(N).
+  generateQueries(server,N, Sleep),
+  stop(N).
 
 
 generateQueries(_,0,_) ->
@@ -40,9 +40,11 @@ sendQuery(Server, _, 2) ->
   Server ! {interval, {X, Y}, {min(Ti,Tk),max(Ti,Tk)}, self()};
 
 sendQuery(Server, _, 3) ->
-  X = rand:uniform(100),
-  Y = rand:uniform(100),
-  Server ! {event, {X,Y}, self()};
+  X1 = rand:uniform(100),
+  Y1 = rand:uniform(100),
+  X2 = rand:uniform(100),
+  Y2 = rand:uniform(100),
+  Server ! {event, {min(X1,X2),min(Y1,Y2)}, {max(X1,X2),max(Y1,Y2)}, self()};
 
 sendQuery(Server, Name, 4) ->
   Server ! {track, Name, self()}.
@@ -58,7 +60,7 @@ generateNodes(N,Server,Sleep) ->
 
 
 stop(0) ->
-  server:stop(server);
+  ok;%server:stop(server);
 
 stop(N) ->
   Name = list_to_atom("node" ++ integer_to_list(N)),
