@@ -1,5 +1,5 @@
 - module(i3RTree).
-- export([new/0, subscribe/4, unsubscribe/2, move/4, timelapse_query/3, interval_query/3, event_query/3, track_query/2, region_query/4]).
+- export([new/0, subscribe/4, unsubscribe/2, move/4, timelapse_query/3, interval_query/3, event_query/3, track_query/3, region_query/4]).
 
 new() ->
   Map = maps:new(),
@@ -62,12 +62,22 @@ region_query({Xmin,Ymin}, {Xmax, Ymax}, {Ti,Tk}, {Rtree, Map, {Last,LastTuple}})
   parseReply(Res).
 
 
+track_query(Pid, {Ti,Tk}, {Rtree, Map, {Last,LastTuple}}) ->
+  {Mbr, Time, {Name,WaitTime,P3d}, Pa, Ps} = maps:get(Pid,Map),
+  {Name, getPath({Mbr, Time, {Name,WaitTime,P3d}, Pa, Ps}, {Ti,Tk})}.
 
 
 
-track_query(Pid, {Rtree, Map, {Last,LastTuple}}) ->
-  % NOT IMPLEMENTED
-  Rtree.
+getPath({Mbr, Time, P3d, Pa, Ps}, {Ti,Tk}) ->
+  case Time >= Ti andalso Time =< Tk of
+    true ->
+      getPath(Pa, {Ti,Tk}) ++ [Mbr];
+    false ->
+      getPath(Pa, {Ti,Tk})
+  end;
+
+getPath(_, {Ti,Tk}) ->
+  [].
 
 lookUpInMap(X, Y, Instant, Map) ->
   [FirstKey | Tail] = maps:keys(Map),

@@ -30,8 +30,8 @@ server(I3Rtree) ->
     {event, RegionMin, RegionMax, Process} -> % distribuido
       spawn(fun() -> event_query(RegionMin, RegionMax, Process, I3Rtree) end),
       server(I3Rtree);
-    {track, Pid, Process} -> % distribuido
-      spawn(fun() -> track_query(Pid, Process, I3Rtree) end),
+    {track, Pid, {Ti,Tk}, Process} -> % distribuido
+      spawn(fun() -> track_query(Pid, {Ti,Tk}, Process, I3Rtree) end),
       server(I3Rtree);
     stop ->
       ok
@@ -53,9 +53,9 @@ event_query(RegionMin, RegionMax, Process, I3Rtree) ->
   io:format("Query event: ~w ~w ~w~n", [RegionMin, RegionMax ,Reply]),
   Process ! {reply, Reply}.
 
-track_query(Pid, Process, I3Rtree) ->
-  Reply = i3RTree:track_query(Pid, I3Rtree),
-  io:format("Query track: ~w ~w~n", [Pid, Reply]),
+track_query(Pid, {Ti,Tk}, Process, I3Rtree) ->
+  Reply = i3RTree:track_query(Pid, {Ti,Tk}, I3Rtree),
+  io:format("Query track: ~w ~w ~w~n", [Pid, {Ti,Tk}, Reply]),
   Process ! {reply, Reply}.
 
 

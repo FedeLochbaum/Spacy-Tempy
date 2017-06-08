@@ -47,7 +47,9 @@ sendQuery(Server, _, 3) ->
   Server ! {event, {min(X1,X2),min(Y1,Y2)}, {max(X1,X2),max(Y1,Y2)}, self()};
 
 sendQuery(Server, Name, 4) ->
-  Server ! {track, Name, self()}.
+  Tk = rand:uniform(server:timeNow()),
+  Ti = rand:uniform(server:timeNow()),
+  Server ! {track, Name, {min(Ti,Tk),max(Ti,Tk)}, self()}.
 
 
 generateNodes(0,_,_) ->
