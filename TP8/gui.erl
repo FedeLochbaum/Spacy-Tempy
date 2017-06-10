@@ -6,6 +6,10 @@
 start(Name) ->
   spawn(gui, init, [Name]).
 
+timeNow() ->
+  {H, M, S} = erlang:time(),
+  H * 3600 + M * 60 + S.
+
 init(Name) ->
   Width = 200,
   Height = 200,
@@ -22,6 +26,7 @@ loop(Frame)->
       wxFrame:refresh(Frame),
       loop(Frame);
     enter ->
+      io:format("gui: enter SC ~w ~n", [timeNow()]),
       wxFrame:setBackgroundColour(Frame,?wxRED),
       wxFrame:refresh(Frame),
       loop(Frame);
