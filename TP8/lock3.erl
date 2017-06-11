@@ -36,7 +36,7 @@ wait(Nodes, Master, Refs, Waiting, MyId, MaxTime, LamportTime) ->
     {request, From, Ref,IdFrom, Time} ->
       NewMaxTime = max(MaxTime,Time),
       if
-        Time < LamportTime -> %IdFrom + 1  == MyId
+        Time < LamportTime ->
           From ! {ok, Ref},
           wait(Nodes, Master, Refs, Waiting, MyId, NewMaxTime, LamportTime);
         Time == LamportTime ->
