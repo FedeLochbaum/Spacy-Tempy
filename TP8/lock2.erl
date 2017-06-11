@@ -16,7 +16,7 @@ open(Id,Nodes) ->
   receive
     {take, Master} ->
       Refs = requests(Id,Nodes),
-      wait(Nodes, Master, Refs, [], Id, true);
+      wait(Nodes, Master, Refs, [], Id);
     {request, From, Ref, OtherId} ->
       From ! {ok, Ref},
       open(Id,Nodes);
@@ -27,23 +27,25 @@ open(Id,Nodes) ->
 requests(Id,Nodes) ->
   lists:map(fun(P) -> R = make_ref(), P ! {request, self(), R, Id}, R end, Nodes).
 
-wait(Nodes, Master, [], Waiting, MyId, CanSendOk) ->
+wait(Nodes, Master, [], Waiting, MyId) ->
   Master ! taken,
   held(Nodes, Waiting, MyId);
 
-wait(Nodes, Master, Refs, Waiting, MyId, CanSendOk) ->
+wait(Nodes, Master, Refs, Waiting, MyId) ->
   receive
     {request, From, Ref,IdFrom} ->
       if
-        IdFrom < MyId  andalso CanSendOk ->
+        IdFrom + 1  == MyId -> %IdFrom + 1  == MyId
           From ! {ok, Ref},
-          wait(Nodes, Master, Refs, Waiting, MyId, false);
+          Ref2 = requests(MyId,[From]),
+          Nrefs = lists:append(Ref2, Refs),
+          wait(Nodes, Master, Nrefs, Waiting, MyId);
         true ->
-          wait(Nodes, Master, Refs, [{From, Ref}|Waiting], MyId, CanSendOk)
+          wait(Nodes, Master, Refs, [{From, Ref}|Waiting], MyId)
       end;
     {ok, Ref} ->
       Refs2 = lists:delete(Ref, Refs),
-      wait(Nodes, Master, Refs2, Waiting, MyId, CanSendOk);
+      wait(Nodes, Master, Refs2, Waiting, MyId);
     release ->
       ok(Waiting),
       open(MyId,Nodes)
