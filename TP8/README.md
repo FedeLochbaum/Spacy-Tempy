@@ -11,7 +11,7 @@ Es necesario mencionar que en este documento se hará refencia a los siguientes 
 ### 1.2. Los locks
 
 #### 1. ¿Sería posible usar la cola de mensajes Erlang y dejar que los mensajes se encolen hasta que se libere el lock?
-
+Si, se agregarían los mensajes por orden cuando el Worker hace la solicitud al Lock de "Take". Cuando en el Worker se haya terminado su tiempo deadlock se tendrá que sacar de la cola y así cuando haga otra solicitud se agregará hasta el final. Ya cuando el Lock se libere accederá al Worker que está al inicio de la cola con su Lock correspondiente a la sección crítica.
 
 #### 2. La razón por la que lo implementamos de esta manera es para hacer explícito que los mensajes son tratados aún en el estado held.¿Por qué no estamos esperando mensajes ok?
 Porque el Lock espera a que se libere la sección crítica y así poder permitir que otro Worker haga uso de ella, solo en el estado Held se manda mensaje de que ya se liberó o que siga en estado Held, esto permite que no entre más de 1 Worker a la sección crítica.
@@ -55,7 +55,7 @@ Es interesante nuevamente prestarle atención a la importancia en la utilizació
 
 ### 4. El reporte
 
-Desde la opinión personal, este trabajo conto con una dificultad diferente a la provista por anteriores trabajos. Si bien en el capítulo del libro correspondiente se explican los factores de importancia y proporciona algunos algoritmos similares, no eran totalmente aplicables a nuestro diseño, fue por esto mismo que requirió comprender, analizar y estudiar posibles casos donde el algoritmo implementado era factible o no.
+Desde la opinión personal, este trabajo contó con una dificultad diferente a la provista por anteriores trabajos. Si bien en el capítulo del libro correspondiente se explican los factores de importancia y proporciona algunos algoritmos similares, no eran totalmente aplicables a nuestro diseño, fue por esto mismo que requirió comprender, analizar y estudiar posibles casos donde el algoritmo implementado era factible o no.
 
 Comenzando con el Lock2, vemos que es necesario brindar algún orden para proporcionar la entrada a la SC, a pesar de esto, también es cierto que, como se mencionó en la sección 2, varios locks podrían estar esperando a la respuesta de un solo lock para entrar mutuamente a la SC. Como esto era un problema se propuso generar una atadura sobre el nodo de menor con el de mayor prioridad, es decir, si un nodo de menor prioridad en estado de esperar le envía Ok al de mayor prioridad se le enviara también un request ligando la entrada a la sección critica del proceso de menor prioridad a la respuesta del de mayor prioridad. Justamente como es el de mayor prioridad no le enviara ok en estado de espera, pero si cuando salga de la SC.
 
