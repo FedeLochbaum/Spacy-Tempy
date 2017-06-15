@@ -1,5 +1,5 @@
 - module(i3RTree).
-- export([new/0, subscribe/4, unsubscribe/2, move/4, timelapse_query/3, interval_query/3, event_query/3, track_query/3, region_query/4, position_query/2]).
+- export([new/0, subscribe/4, unsubscribe/2, move/4, timelapse_query/3, interval_query/3, event_query/3, track_query/3, region_query/4, position_query/2,pidBelong/2]).
 
 new() ->
   Map = maps:new(),
@@ -81,7 +81,8 @@ track_query(Pid, {Ti,Tk}, {Rtree, Map, {Last,LastTuple}}) ->
   {Mbr, Time, {Name,WaitTime,P3d}, Pa, Ps} = maps:get(Pid,Map),
   {Name, getPath({Mbr, Time, {Name,WaitTime,P3d}, Pa, Ps}, {Ti,Tk})}.
 
-
+pidBelong(Pid, {_, Map, _}) ->
+  maps:get(Pid, Map, false).
 
 getPath({Mbr, Time, P3d, Pa, Ps}, {Ti,Tk}) ->
   case Time >= Ti andalso Time =< Tk of
