@@ -1,5 +1,5 @@
 - module(i3RTree).
-- export([new/0, subscribe/4, unsubscribe/2, move/4, timelapse_query/3, interval_query/3, event_query/3, track_query/3, region_query/4]).
+- export([new/0, subscribe/4, unsubscribe/2, move/4, timelapse_query/3, interval_query/3, event_query/3, track_query/3, region_query/4, position_query/2]).
 
 new() ->
   Map = maps:new(),
@@ -28,7 +28,6 @@ unsubscribe(Pid, {Rtree, Map, {Last,{Mbr, Instant, P3d, Pa, Ps}}} ) ->
   {Rtree, NMap, {NewLast,NewLastTuple}}.
 
 move(Pid, {X,Y}, Instant, {Rtree, Map, {Last,LastTuple}}) ->
-  io:format("Move : ~w~n", [Instant]),
   Mbr = {X, Y, Instant},
   Pa = LastTuple,
   {{XOld, YOld, InstantOld}, InstantOld, P3dOld, PaOld, PsOld} = maps:get(Pid,Map),
@@ -41,7 +40,6 @@ move(Pid, {X,Y}, Instant, {Rtree, Map, {Last,LastTuple}}) ->
 
   Point = rstar_geometry:point3d(XOld, YOld, InstantOld, P3dOld),
   NewRtree = rstar:insert(Rtree, Point),
-  io:format("Finaly Move : ~w~n", [NewRtree]),
   {NewRtree, maps:put(Pid,Tuple,NMap), {Pid,Tuple}}.
 
 timelapse_query({X,Y}, Instant, {Rtree, Map, {Last,LastTuple}}) ->
@@ -70,6 +68,14 @@ region_query({Xmin,Ymin}, {Xmax, Ymax}, {Ti,Tk}, {Rtree, Map, {Last,LastTuple}})
   end,
   parseReply(Res).
 
+position_query(Pid, {_, Map, _}) ->
+    case maps:get(Pid, Map, none) of
+      none ->
+        Res = none;
+      Reply ->
+        Res = parseAReply(Reply)
+    end,
+    Res.
 
 track_query(Pid, {Ti,Tk}, {Rtree, Map, {Last,LastTuple}}) ->
   {Mbr, Time, {Name,WaitTime,P3d}, Pa, Ps} = maps:get(Pid,Map),
@@ -126,6 +132,21 @@ tMinInd(Map) ->
 
 updateLast({Pid,Tuple},{Last,{Mbr,T,P3d,Pa,_}},Map) ->
   maps:put(Last,{Mbr,T,P3d,Pa,Tuple},Map).
+
+parseAReply(Reply) ->
+  case Reply of
+    {geometry,3,[{Xmin, _},{Ymin, _},{Tmin,_}],Value} ->
+      case Value of
+        {Name,{Xold,Yold,IntervalWaitTime}, P3d} ->
+          Res = {{name, Name},{position, Xmin, Ymin, Tmin},{waitTime, IntervalWaitTime}};
+        {0,0,0} ->
+          Res = {{name, 0},{position, Xmin, Ymin, Tmin},{waitTime, 0}}
+      end;
+
+    {{X, Y, T}, Instant, {Name,_,_}, Pa, Ps} ->
+      Res = {{name, Name},{position, X, Y, T},{waitTime, 0}}
+  end,
+  Res.
 
 
 parseReply(Reply) ->

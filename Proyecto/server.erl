@@ -21,17 +21,20 @@ server(I3Rtree) ->
     {move, Pid, {X, Y}} ->
       NRtree = i3RTree:move(Pid, {X,Y}, timeNow(), I3Rtree),
       server(NRtree);
-    {timelapse, Region, Instant, Process} -> % distribuido
+    {timelapse, Region, Instant, Process} ->
       spawn(fun() -> timelapse_query(Region, Instant, Process, I3Rtree) end),
       server(I3Rtree);
-    {interval, Region, {Ti,Tk}, Process} -> % distribuido
+    {interval, Region, {Ti,Tk}, Process} ->
       spawn(fun() -> interval_query(Region, {Ti,Tk}, Process, I3Rtree) end),
       server(I3Rtree);
-    {event, RegionMin, RegionMax, Process} -> % distribuido
+    {event, RegionMin, RegionMax, Process} ->
       spawn(fun() -> event_query(RegionMin, RegionMax, Process, I3Rtree) end),
       server(I3Rtree);
-    {track, Pid, {Ti,Tk}, Process} -> % distribuido
+    {track, Pid, {Ti,Tk}, Process} ->
       spawn(fun() -> track_query(Pid, {Ti,Tk}, Process, I3Rtree) end),
+      server(I3Rtree);
+    {position, Pid, Process} ->
+      spawn(fun() -> position_query(Pid, Process, I3Rtree) end),
       server(I3Rtree);
     stop ->
       ok
@@ -56,6 +59,11 @@ event_query(RegionMin, RegionMax, Process, I3Rtree) ->
 track_query(Pid, {Ti,Tk}, Process, I3Rtree) ->
   Reply = i3RTree:track_query(Pid, {Ti,Tk}, I3Rtree),
   io:format("Query track: ~w ~w ~w~n", [Pid, {Ti,Tk}, Reply]),
+  Process ! {reply, Reply}.
+
+position_query(Pid, Process, I3Rtree) ->
+  Reply = i3RTree:position_query(Pid, I3Rtree),
+  io:format("Query position: ~w ~w~n", [Pid, Reply]),
   Process ! {reply, Reply}.
 
 
