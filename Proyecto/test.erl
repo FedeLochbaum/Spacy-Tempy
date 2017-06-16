@@ -3,11 +3,21 @@
 
 
 start(N) ->
-  server:start(server),
-  Sleep = 5000,
-  generateNodes(N,server,Sleep),
-  generateQueries(server,N, Sleep),
-  stop(N).
+  distributedServer:start(s1, {0,0}, {50,50}),
+  distributedServer:start(s2, {50,50}, {100,100}),
+  distributedServer:start(s3, {100,100}, {150,150}),
+  distributedServer:start(s4, {150,150}, {200,200}),
+  s1 ! {peers, [s2,s3,s4], s2},
+  s2 ! {peers, [s3,s4,s1], s3},
+  s3 ! {peers, [s4,s1,s2], s4},
+  s4 ! {peers, [s1,s2,s3], s1},
+
+  Sleep = 500,
+  Servers = [s1,s2,s3,s4],
+  S = lists:nth(rand:uniform(length(Servers)), Servers).
+  % generateNodes(N,S,Sleep).
+  % generateQueries(server,N, Sleep),
+  % stop(N).
 
 
 generateQueries(_,0,_) ->

@@ -11,6 +11,8 @@ init(Name, Server, Sleep) ->
   X = rand:uniform(10),
   Y = rand:uniform(10),
 
+
+  io:format("subscibe : ~w ~p~n", [Name, {X,Y}]),
   Server ! {subscribe, Name, {X, Y}},
   receive
     ok ->
@@ -20,7 +22,7 @@ init(Name, Server, Sleep) ->
   end.
 
 loop(Name, Server, Sleep, {X,Y}) ->
-  io:format("log: ~w ~p~n", [Name, {X,Y}]),
+  io:format("loop: ~w ~p~n", [Name, {X,Y}]),
   XMove = rand:uniform(10),
   YMove = rand:uniform(10),
   Server ! {move, Name, {XMove, YMove}},

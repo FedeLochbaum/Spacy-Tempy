@@ -3,8 +3,8 @@
 
 new() ->
   Map = maps:new(),
-  NMap = maps:put(0,{0,0,0,0,0},Map),
-  {rstar:new(3),NMap,{0,{0,0,0,0,0}}}.
+  NMap = maps:put(0,{0,0,{0,0,0},0,0},Map),
+  {rstar:new(3),NMap,{0,{0,0,{0,0,0},0,0}}}.
 
 subscribe(Pid, {X, Y}, Instant, {Rtree, Map, {Last,LastTuple}}) ->
   Mbr = {X, Y, Instant},
@@ -14,20 +14,26 @@ subscribe(Pid, {X, Y}, Instant, {Rtree, Map, {Last,LastTuple}}) ->
   NMap = updateLast({Pid,Tuple},{Last,LastTuple},Map),
   {Rtree, maps:put(Pid,Tuple,NMap),{Pid,Tuple}}.
 
-unsubscribe(Pid, {Rtree, Map, {Last,{Mbr, Instant, P3d, Pa, Ps}}} ) ->
-  case Pid  == Last of
-    true ->
-      {MbrOld, InstantOld, {PidOld, MbrOldOld, P3dOld}, PaOld, PsOld} = Pa,
-      NewLast = PidOld,
-      NewLastTuple = Pa;
-    false ->
-      NewLast = Last,
-      NewLastTuple = {Mbr, Instant, P3d, Pa, Ps}
-  end,
-  NMap = maps:remove(Last,Map),
-  {Rtree, NMap, {NewLast,NewLastTuple}}.
+unsubscribe(Pid, {Rtree, Map, LastElem} ) ->
+  case LastElem of
+    {Last,{Mbr, Instant, P3d, Pa, Ps}} ->
+      case Pid  == Last of
+        true ->
+          {MbrOld, InstantOld, {PidOld, MbrOldOld, P3dOld}, PaOld, PsOld} = Pa,
+          NewLast = PidOld,
+          NewLastTuple = Pa;
+        false ->
+          NewLast = Last,
+          NewLastTuple = {Mbr, Instant, P3d, Pa, Ps}
+      end,
+      NMap = maps:remove(Last,Map),
+      {Rtree, NMap, {NewLast,NewLastTuple}};
+    _ ->
+      {Rtree, Map, LastElem}
+  end.
 
 move(Pid, {X,Y}, Instant, {Rtree, Map, {Last,LastTuple}}) ->
+  io:format("now: ~w~n", [Instant]),
   Mbr = {X, Y, Instant},
   Pa = LastTuple,
   {{XOld, YOld, InstantOld}, InstantOld, P3dOld, PaOld, PsOld} = maps:get(Pid,Map),
@@ -82,7 +88,12 @@ track_query(Pid, {Ti,Tk}, {Rtree, Map, {Last,LastTuple}}) ->
   {Name, getPath({Mbr, Time, {Name,WaitTime,P3d}, Pa, Ps}, {Ti,Tk})}.
 
 pidBelong(Pid, {_, Map, _}) ->
-  maps:get(Pid, Map, false).
+  case maps:get(Pid, Map, false) of
+    false ->
+      false;
+    _ ->
+      true
+  end.
 
 getPath({Mbr, Time, P3d, Pa, Ps}, {Ti,Tk}) ->
   case Time >= Ti andalso Time =< Tk of
