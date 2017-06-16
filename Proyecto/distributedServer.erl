@@ -106,19 +106,31 @@ server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}) ->
       end,
       server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY});
 
-    {track, Pid, {Ti,Tk}, Process} ->
-      spawn(fun() ->
-              Next ! {track, Pid, {Ti,Tk}, self()},
-              track_query(Pid, {Ti,Tk}, Process, I3Rtree, Peers)
-            end),
+    {track, Pid, {Ti,Tk}, Sender, ReplyTo} ->
+      case lists:member(Sender, Peers) of
+        true ->
+          spawn(fun() ->
+                  track_query(Pid, {Ti,Tk}, ReplyTo, I3Rtree, [], 0)
+                end);
+        false ->
+          spawn(fun() ->
+                  lists:foreach(fun(Peer) -> Peer ! {track, Pid, {Ti,Tk}, MyName, self()} end, Peers),
+                  track_query(Pid, {Ti,Tk}, ReplyTo, I3Rtree, [], length(Peers))
+                end)
+      end,
       server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY});
 
-    {position, Pid, Process} ->
-      spawn(fun() ->
-              Next ! {position, Pid, self()},
-              position_query(Pid, Process, I3Rtree, Peers)
-            end),
+    {position, Pid, Sender, ReplyTo} ->
+      case pidBelong(Pid, I3Rtree) of
+        true ->
+          spawn(fun() ->
+                  position_query(Pid, ReplyTo, I3Rtree)
+                end);
+        false ->
+          Next ! {position, Pid, Sender, ReplyTo}
+      end,
       server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY});
+
     stop ->
       ok
   end.
@@ -163,16 +175,23 @@ event_query(RegionMin, RegionMax, ReplyTo, I3Rtree, OtherReply, CountPeers) ->
       ok
   end.
 
-track_query(Pid, {Ti,Tk}, Process, I3Rtree, Peers) ->
+track_query(Pid, {Ti,Tk}, ReplyTo, I3Rtree, OtherReply, 0) ->
   Reply = i3RTree:track_query(Pid, {Ti,Tk}, I3Rtree),
   io:format("Query track: ~w ~w ~w~n", [Pid, {Ti,Tk}, Reply]),
-  Process ! {reply, Reply}.
+  ReplyTo ! {reply, [Reply] ++ OtherReply};
 
-position_query(Pid, Process, I3Rtree, Peers) ->
+track_query(Pid, {Ti,Tk}, ReplyTo, I3Rtree, OtherReply, CountPeers) ->
+  receive
+    {reply, Reply} ->
+      track_query(Pid, {Ti,Tk}, ReplyTo, I3Rtree, [Reply] ++ OtherReply, CountPeers-1);
+    _ ->
+      ok
+  end.
+
+position_query(Pid, ReplyTo, I3Rtree) ->
   Reply = i3RTree:position_query(Pid, I3Rtree),
   io:format("Query position: ~w ~w~n", [Pid, Reply]),
-  Process ! {reply, Reply}.
-
+  ReplyTo ! {reply, Reply}.
 
 rangeBelong({X, Y}, {InitialX, InitialY}, {FinalX, FinalY}) -> % Parece haber un bug, revisar geometricamente
   (X >= InitialX andalso X < FinalX) andalso (Y >= InitialY andalso Y < FinalY).

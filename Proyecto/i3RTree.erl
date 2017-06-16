@@ -84,8 +84,13 @@ position_query(Pid, {_, Map, _}) ->
     Res.
 
 track_query(Pid, {Ti,Tk}, {Rtree, Map, {Last,LastTuple}}) ->
-  {Mbr, Time, {Name,WaitTime,P3d}, Pa, Ps} = maps:get(Pid,Map),
-  {Name, getPath({Mbr, Time, {Name,WaitTime,P3d}, Pa, Ps}, {Ti,Tk})}.
+  case pidBelong(Pid, {Rtree, Map, {Last,LastTuple}}) of
+    true ->
+      {Mbr, Time, {Name,WaitTime,P3d}, Pa, Ps} = maps:get(Pid,Map),
+      {Name, getPath({Mbr, Time, {Name,WaitTime,P3d}, Pa, Ps}, {Ti,Tk})};
+    false ->
+      {}
+  end.
 
 pidBelong(Pid, {_, Map, _}) ->
   case maps:get(Pid, Map, false) of
