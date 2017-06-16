@@ -193,7 +193,7 @@ position_query(Pid, ReplyTo, I3Rtree) ->
   io:format("Query position: ~w ~w~n", [Pid, Reply]),
   ReplyTo ! {reply, Reply}.
 
-rangeBelong({X, Y}, {InitialX, InitialY}, {FinalX, FinalY}) -> % Parece haber un bug, revisar geometricamente
+rangeBelong({X, Y}, {InitialX, InitialY}, {FinalX, FinalY}) ->
   (X >= InitialX andalso X < FinalX) andalso (Y >= InitialY andalso Y < FinalY).
 
 pidBelong(Pid, I3Rtree) ->
