@@ -3,13 +3,13 @@
 -import(rstar, [rstar/1]).
 
 start(Name, {InitialX, InitialY}, {FinalX, FinalY}) ->
-  register(Name, spawn(fun() -> init({InitialX, InitialY}, {FinalX, FinalY}) end)).
+  register(Name, spawn(fun() -> init(Name, {InitialX, InitialY}, {FinalX, FinalY}) end)).
 
 
-init({InitialX, InitialY}, {FinalX, FinalY}) ->
+init(Name, {InitialX, InitialY}, {FinalX, FinalY}) ->
   receive
     {peers, Peers, Next} ->
-      server(Peers, Next, i3RTree:new(), {InitialX, InitialY}, {FinalX, FinalY});
+      server(Name, Peers, Next, i3RTree:new(), {InitialX, InitialY}, {FinalX, FinalY});
     stop ->
       ok
   end.
@@ -17,7 +17,7 @@ init({InitialX, InitialY}, {FinalX, FinalY}) ->
 stop(Server) ->
 Server ! stop.
 
-server(Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}) ->
+server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}) ->
   receive
     {subscribe, Pid, {X, Y}} ->
       case rangeBelong({X, Y}, {InitialX, InitialY}, {FinalX, FinalY}) of
@@ -28,7 +28,7 @@ server(Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}) ->
           NRtree = I3Rtree,
           Next ! {subscribe, Pid, {X, Y}}
       end,
-      server(Peers, Next, NRtree, {InitialX, InitialY}, {FinalX, FinalY});
+      server(MyName, Peers, Next, NRtree, {InitialX, InitialY}, {FinalX, FinalY});
 
     {unsubscribe, Pid} ->
       case pidBelong(Pid, I3Rtree) of
@@ -39,7 +39,7 @@ server(Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}) ->
           NRtree = I3Rtree,
           Next ! {unsubscribe, Pid}
       end,
-      server(Peers, Next, NRtree, {InitialX, InitialY}, {FinalX, FinalY});
+      server(MyName, Peers, Next, NRtree, {InitialX, InitialY}, {FinalX, FinalY});
 
     {move, Pid, {X, Y}} ->
       case pidBelong(Pid, I3Rtree) of
@@ -48,8 +48,8 @@ server(Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}) ->
             true ->
               NRtree = i3RTree:move(Pid, {X,Y}, timeNow(), I3Rtree);
             false ->
-              % NRtree = i3RTree:move(Pid, {X,Y}, timeNow(), I3Rtree),
-              NRtree = i3RTree:unsubscribe(Pid, I3Rtree),
+              NRtree1 = i3RTree:move(Pid, {X,Y}, timeNow(), I3Rtree),
+              NRtree = i3RTree:unsubscribe(Pid, NRtree1),
               Next ! {move, Pid, {X, Y}}
           end;
         false ->
@@ -62,64 +62,63 @@ server(Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}) ->
           end
       end,
       io:format("tree: ~w~n", [NRtree]),
-      server(Peers, Next, NRtree, {InitialX, InitialY}, {FinalX, FinalY});
+      server(MyName, Peers, Next, NRtree, {InitialX, InitialY}, {FinalX, FinalY});
 
-    {timelapse, Region, Instant, Process} ->
-      case lists:member(Process, Peers) of
+    {timelapse, Region, Instant, Sender, ReplyTo} ->
+      case lists:member(Sender, Peers) of
         true ->
           spawn(fun() ->
-                  timelapse_query(Region, Instant, Process, I3Rtree, [], 0)
+                  timelapse_query(Region, Instant, ReplyTo, I3Rtree, [], 0)
                 end);
         false ->
           spawn(fun() ->
-                  lists:foreach(fun(Server) -> Server ! {timelapse, Region, Instant, self()} end, Peers),
-                  timelapse_query(Region, Instant, Process, I3Rtree,[] ,length(Peers))
+                  lists:foreach(fun(Peer) -> Peer ! {timelapse, Region, Instant, MyName, self()} end, Peers),
+                  timelapse_query(Region, Instant, ReplyTo, I3Rtree, [], length(Peers))
                 end)
       end,
-      server(Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY});
+      server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY});
 
     {interval, Region, {Ti,Tk}, Process} ->
       spawn(fun() ->
               Next ! {interval, Region, {Ti,Tk}, self()},
               interval_query(Region, {Ti,Tk}, Process, I3Rtree, Peers)
             end),
-      server(Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY});
+      server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY});
 
     {event, RegionMin, RegionMax, Process} ->
       spawn(fun() ->
               Next ! {event, RegionMin, RegionMax, self()},
               event_query(RegionMin, RegionMax, Process, I3Rtree, Peers)
             end),
-      server(Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY});
+      server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY});
 
     {track, Pid, {Ti,Tk}, Process} ->
       spawn(fun() ->
               Next ! {track, Pid, {Ti,Tk}, self()},
               track_query(Pid, {Ti,Tk}, Process, I3Rtree, Peers)
             end),
-      server(Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY});
+      server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY});
 
     {position, Pid, Process} ->
       spawn(fun() ->
               Next ! {position, Pid, self()},
               position_query(Pid, Process, I3Rtree, Peers)
             end),
-      server(Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY});
+      server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY});
     stop ->
       ok
   end.
 
 
-% HACER LAS DEMAS QUERYES ASI. HAY QUE TESTEAR ESTA PRIMERO ////// SE HACE RECURSIVAMENTE.. 
-timelapse_query(Region, Instant, Process, I3Rtree, OtherReply, 0) ->
+timelapse_query(Region, Instant, ReplyTo, I3Rtree, OtherReply, 0) ->
   Reply = i3RTree:timelapse_query(Region, Instant, I3Rtree),
   io:format("Query timeLapse: ~w ~w~n", [Instant, Reply]),
-  Process ! {reply, Reply ++ OtherReply};
+  ReplyTo ! {reply, Reply ++ OtherReply};
 
-timelapse_query(Region, Instant, Process, I3Rtree, OtherReply, CountPeers) ->
+timelapse_query(Region, Instant, ReplyTo, I3Rtree, OtherReply, CountPeers) ->
   receive
     {reply, Reply} ->
-      timelapse_query(Region, Instant, Process, I3Rtree, Reply ++ OtherReply, CountPeers-1);
+      timelapse_query(Region, Instant, ReplyTo, I3Rtree, Reply ++ OtherReply, CountPeers-1);
     _ ->
       ok
   end.
@@ -145,7 +144,7 @@ position_query(Pid, Process, I3Rtree, Peers) ->
   Process ! {reply, Reply}.
 
 
-rangeBelong({X, Y}, {InitialX, InitialY}, {FinalX, FinalY}) ->
+rangeBelong({X, Y}, {InitialX, InitialY}, {FinalX, FinalY}) -> % Parece haber un bug, revisar geometricamente
   (X >= InitialX andalso X < FinalX) andalso (Y >= InitialY andalso Y < FinalY).
 
 pidBelong(Pid, I3Rtree) ->

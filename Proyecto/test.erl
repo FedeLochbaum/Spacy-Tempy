@@ -4,9 +4,9 @@
 
 start(N) ->
   distributedServer:start(s1, {0,0}, {50,50}),
-  distributedServer:start(s2, {50,50}, {100,100}),
-  distributedServer:start(s3, {100,100}, {150,150}),
-  distributedServer:start(s4, {150,150}, {200,200}),
+  distributedServer:start(s2, {50,0}, {100,50}),
+  distributedServer:start(s3, {0,50}, {50,100}),
+  distributedServer:start(s4, {50,50}, {100,100}),
   s1 ! {peers, [s2,s3,s4], s2},
   s2 ! {peers, [s3,s4,s1], s3},
   s3 ! {peers, [s4,s1,s2], s4},
