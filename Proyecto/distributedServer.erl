@@ -78,18 +78,32 @@ server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}) ->
       end,
       server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY});
 
-    {interval, Region, {Ti,Tk}, Process} ->
-      spawn(fun() ->
-              Next ! {interval, Region, {Ti,Tk}, self()},
-              interval_query(Region, {Ti,Tk}, Process, I3Rtree, Peers)
-            end),
+    {interval, Region, {Ti,Tk}, Sender, ReplyTo} ->
+      case lists:member(Sender, Peers) of
+        true ->
+          spawn(fun() ->
+                  interval_query(Region, {Ti,Tk}, ReplyTo, I3Rtree, [], 0)
+                end);
+        false ->
+          spawn(fun() ->
+                  lists:foreach(fun(Peer) -> Peer ! {interval, Region, {Ti,Tk}, MyName, self()} end, Peers),
+                  interval_query(Region, {Ti,Tk}, ReplyTo, I3Rtree, [], length(Peers))
+                end)
+      end,
       server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY});
 
-    {event, RegionMin, RegionMax, Process} ->
-      spawn(fun() ->
-              Next ! {event, RegionMin, RegionMax, self()},
-              event_query(RegionMin, RegionMax, Process, I3Rtree, Peers)
-            end),
+    {event, RegionMin, RegionMax, Sender, ReplyTo} ->
+      case lists:member(Sender, Peers) of
+        true ->
+          spawn(fun() ->
+                  event_query(RegionMin, RegionMax, ReplyTo, I3Rtree, [], 0)
+                end);
+        false ->
+          spawn(fun() ->
+                  lists:foreach(fun(Peer) -> Peer ! {event, RegionMin, RegionMax, MyName, self()} end, Peers),
+                  event_query(RegionMin, RegionMax, ReplyTo, I3Rtree, [], length(Peers))
+                end)
+      end,
       server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY});
 
     {track, Pid, {Ti,Tk}, Process} ->
@@ -123,15 +137,31 @@ timelapse_query(Region, Instant, ReplyTo, I3Rtree, OtherReply, CountPeers) ->
       ok
   end.
 
-interval_query(Region, {Ti,Tk}, Process, I3Rtree, Peers) ->
+interval_query(Region, {Ti,Tk}, ReplyTo, I3Rtree, OtherReply, 0) ->
   Reply = i3RTree:interval_query(Region, {Ti,Tk}, I3Rtree),
   io:format("Query interval: ~w ~w ~w~n", [Region, {Ti,Tk} ,Reply]),
-  Process ! {reply, Reply}.
+  ReplyTo ! {reply, Reply ++ OtherReply};
 
-event_query(RegionMin, RegionMax, Process, I3Rtree, Peers) ->
+interval_query(Region, {Ti,Tk}, ReplyTo, I3Rtree, OtherReply, CountPeers) ->
+  receive
+    {reply, Reply} ->
+      interval_query(Region, {Ti,Tk}, ReplyTo, I3Rtree, Reply ++ OtherReply, CountPeers-1);
+    _ ->
+      ok
+  end.
+
+event_query(RegionMin, RegionMax, ReplyTo, I3Rtree, OtherReply, 0) ->
   Reply = i3RTree:event_query(RegionMin, RegionMax, I3Rtree),
   io:format("Query event: ~w ~w ~w~n", [RegionMin, RegionMax ,Reply]),
-  Process ! {reply, Reply}.
+  ReplyTo ! {reply, Reply ++ OtherReply};
+
+event_query(RegionMin, RegionMax, ReplyTo, I3Rtree, OtherReply, CountPeers) ->
+  receive
+    {reply, Reply} ->
+      event_query(RegionMin, RegionMax, ReplyTo, I3Rtree, Reply ++ OtherReply, CountPeers-1);
+    _ ->
+      ok
+  end.
 
 track_query(Pid, {Ti,Tk}, Process, I3Rtree, Peers) ->
   Reply = i3RTree:track_query(Pid, {Ti,Tk}, I3Rtree),
