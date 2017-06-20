@@ -61,7 +61,7 @@ server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}) ->
               Next ! {move, Pid, {X, Y}}
           end
       end,
-      io:format("tree: ~w~n", [NRtree]),
+      % io:format("tree: ~w~n", [NRtree]),
       server(MyName, Peers, Next, NRtree, {InitialX, InitialY}, {FinalX, FinalY});
 
     {timelapse, Region, Instant, Sender, ReplyTo} ->

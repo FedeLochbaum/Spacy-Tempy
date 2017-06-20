@@ -1,13 +1,13 @@
 -module(node).
--export([start/3, stop/1]).
+-export([start/4, stop/1]).
 
-start(Name, Server, Sleep) ->
-  register(Name, spawn_link(fun() -> init(Name, Server, Sleep) end)).
+start(Name, Server, Sleep, {Xmax, Ymax}) ->
+  register(Name, spawn_link(fun() -> init(Name, Server, Sleep, {Xmax, Ymax}) end)).
 
 stop(Node) ->
   Node ! stop.
 
-init(Name, Server, Sleep) ->
+init(Name, Server, Sleep, {Xmax, Ymax}) ->
   X = rand:uniform(10),
   Y = rand:uniform(10),
 
@@ -16,19 +16,22 @@ init(Name, Server, Sleep) ->
   Server ! {subscribe, Name, {X, Y}},
   receive
     ok ->
-      loop(Name, Server, Sleep, {X,Y});
+      loop(Name, Server, Sleep, {X,Y}, {Xmax, Ymax});
     stop ->
       ok
   end.
 
-loop(Name, Server, Sleep, {X,Y}) ->
-  io:format("loop: ~w ~p~n", [Name, {X,Y}]),
+loop(Name, Server, Sleep, {X,Y}, {Xmax, Ymax}) ->
+  % io:format("loop: ~w ~p~n", [Name, {X,Y}]),
   XMove = rand:uniform(10),
   YMove = rand:uniform(10),
-  Server ! {move, Name, {XMove, YMove}},
+  MinX = min(X+XMove, Xmax),
+  MinY = max(Y+YMove, Ymax),
+  Server ! {move, Name, {MinX, MinY}},
   receive
     stop ->
       ok
     after Sleep ->
-      loop(Name, Server, Sleep, {X+XMove, Y+YMove})
+
+      loop(Name, Server, Sleep, {MinX, MinY}, {Xmax, Ymax})
   end.

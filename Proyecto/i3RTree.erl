@@ -33,7 +33,7 @@ unsubscribe(Pid, {Rtree, Map, LastElem} ) ->
   end.
 
 move(Pid, {X,Y}, Instant, {Rtree, Map, {Last,LastTuple}}) ->
-  io:format("now: ~w~n", [Instant]),
+  % io:format("now: ~w~n", [Instant]),
   Mbr = {X, Y, Instant},
   Pa = LastTuple,
   {{XOld, YOld, InstantOld}, InstantOld, P3dOld, PaOld, PsOld} = maps:get(Pid,Map),

@@ -12,10 +12,9 @@ start(N) ->
   s3 ! {peers, [s4,s1,s2], s4},
   s4 ! {peers, [s1,s2,s3], s1},
 
-  Sleep = 500,
+  Sleep = 3000,
   Servers = [s1,s2,s3,s4],
-  S = lists:nth(rand:uniform(length(Servers)), Servers).
-  % generateNodes(N,S,Sleep).
+  generateNodes(N,Servers,Sleep,{0,100}).
   % generateQueries(server,N, Sleep),
   % stop(N).
 
@@ -62,13 +61,14 @@ sendQuery(Server, Name, 4) ->
   Server ! {track, Name, {min(Ti,Tk),max(Ti,Tk)}, self()}.
 
 
-generateNodes(0,_,_) ->
+generateNodes(0,_,_,_) ->
   ok;
 
-generateNodes(N,Server,Sleep) ->
+generateNodes(N, Servers, Sleep, {Xmax, Ymax}) ->
   Name = list_to_atom("node" ++ integer_to_list(N)),
-  node:start(Name,Server,Sleep),
-  generateNodes(N-1,Server,Sleep).
+  Server = lists:nth(rand:uniform(length(Servers)), Servers),
+  node:start(Name, Server, Sleep, {Xmax, Ymax}),
+  generateNodes(N-1, Servers, Sleep, {Xmax, Ymax}).
 
 
 stop(0) ->
