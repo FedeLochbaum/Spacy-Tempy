@@ -26,12 +26,13 @@ loop(Name, Server, Sleep, {X,Y}, {Xmax, Ymax}) ->
   XMove = rand:uniform(10),
   YMove = rand:uniform(10),
   MinX = min(X+XMove, Xmax),
-  MinY = max(Y+YMove, Ymax),
+  MinY = min(Y+YMove, Ymax),
+  SleepR = rand:uniform(Sleep),
   Server ! {move, Name, {MinX, MinY}},
   receive
     stop ->
       ok
-    after Sleep ->
+    after SleepR ->
 
       loop(Name, Server, Sleep, {MinX, MinY}, {Xmax, Ymax})
   end.

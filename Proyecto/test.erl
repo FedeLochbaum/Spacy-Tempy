@@ -3,20 +3,42 @@
 
 
 start(N) ->
-  distributedServer:start(s1, {0,0}, {50,50}),
-  distributedServer:start(s2, {50,0}, {100,50}),
-  distributedServer:start(s3, {0,50}, {50,100}),
-  distributedServer:start(s4, {50,50}, {100,100}),
+  MaxRange = {100,100},
+
+  distributedServer:start(s1, {0,0}, {50,50}, MaxRange),
+  distributedServer:start(s2, {50,0}, {100,50}, MaxRange),
+  distributedServer:start(s3, {0,50}, {50,100}, MaxRange ),
+  distributedServer:start(s4, {50,50}, {100,100}, MaxRange),
   s1 ! {peers, [s2,s3,s4], s2},
   s2 ! {peers, [s3,s4,s1], s3},
   s3 ! {peers, [s4,s1,s2], s4},
   s4 ! {peers, [s1,s2,s3], s1},
 
-  Sleep = 3000,
+
+  Sleep = 30000,
   Servers = [s1,s2,s3,s4],
-  generateNodes(N,Servers,Sleep,{0,100}).
+  generateNodes(N, Servers, Sleep, MaxRange).
   % generateQueries(server,N, Sleep),
   % stop(N).
+
+
+generateNodes(0,_,_,_) ->
+  ok;
+
+generateNodes(N, Servers, Sleep, {Xmax, Ymax}) ->
+  Name = list_to_atom("node" ++ integer_to_list(N)),
+  Server = lists:nth(rand:uniform(length(Servers)), Servers),
+  node:start(Name, Server, Sleep, {Xmax, Ymax}),
+  generateNodes(N-1, Servers, Sleep, {Xmax, Ymax}).
+
+
+stop(0) ->
+  ok;%server:stop(server);
+
+stop(N) ->
+  Name = list_to_atom("node" ++ integer_to_list(N)),
+  node:stop(Name),
+  stop(N-1).
 
 
 generateQueries(_,0,_) ->
@@ -33,7 +55,6 @@ generateQueries(Server,N,TimeSleep) ->
       io:format("Reply : ~w~n", [Reply]),
       generateQueries(Server, N-1, TimeSleep)
   end.
-
 
 sendQuery(Server, _, 1) ->
   X = rand:uniform(100),
@@ -59,22 +80,3 @@ sendQuery(Server, Name, 4) ->
   Tk = rand:uniform(server:timeNow()),
   Ti = rand:uniform(server:timeNow()),
   Server ! {track, Name, {min(Ti,Tk),max(Ti,Tk)}, self()}.
-
-
-generateNodes(0,_,_,_) ->
-  ok;
-
-generateNodes(N, Servers, Sleep, {Xmax, Ymax}) ->
-  Name = list_to_atom("node" ++ integer_to_list(N)),
-  Server = lists:nth(rand:uniform(length(Servers)), Servers),
-  node:start(Name, Server, Sleep, {Xmax, Ymax}),
-  generateNodes(N-1, Servers, Sleep, {Xmax, Ymax}).
-
-
-stop(0) ->
-  ok;%server:stop(server);
-
-stop(N) ->
-  Name = list_to_atom("node" ++ integer_to_list(N)),
-  node:stop(Name),
-  stop(N-1).

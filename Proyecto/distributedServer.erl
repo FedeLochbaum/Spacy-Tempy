@@ -1,15 +1,15 @@
 -module(distributedServer).
--export([start/3,stop/1,timeNow/0]).
+-export([start/4,stop/1,timeNow/0]).
 -import(rstar, [rstar/1]).
 
-start(Name, {InitialX, InitialY}, {FinalX, FinalY}) ->
-  register(Name, spawn(fun() -> init(Name, {InitialX, InitialY}, {FinalX, FinalY}) end)).
+start(Name, {InitialX, InitialY}, {FinalX, FinalY}, MaxRange) ->
+  register(Name, spawn(fun() -> init(Name, {InitialX, InitialY}, {FinalX, FinalY}, MaxRange) end)).
 
 
-init(Name, {InitialX, InitialY}, {FinalX, FinalY}) ->
+init(Name, {InitialX, InitialY}, {FinalX, FinalY}, MaxRange) ->
   receive
     {peers, Peers, Next} ->
-      server(Name, Peers, Next, i3RTree:new(), {InitialX, InitialY}, {FinalX, FinalY});
+      server(Name, Peers, Next, i3RTree:new(), {InitialX, InitialY}, {FinalX, FinalY}, MaxRange);
     stop ->
       ok
   end.
@@ -17,18 +17,23 @@ init(Name, {InitialX, InitialY}, {FinalX, FinalY}) ->
 stop(Server) ->
 Server ! stop.
 
-server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}) ->
+server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}) ->
   receive
     {subscribe, Pid, {X, Y}} ->
-      case rangeBelong({X, Y}, {InitialX, InitialY}, {FinalX, FinalY}) of
+      case rangeBelong({X, Y}, {0,0}, {MaxRangeX, MaxRangeY}) of
         true ->
-          NRtree = i3RTree:subscribe(Pid, {X, Y}, timeNow(), I3Rtree),
-          Pid ! ok;
+          case rangeBelong({X, Y}, {InitialX, InitialY}, {FinalX, FinalY}) of
+            true ->
+              NRtree = i3RTree:subscribe(Pid, {X, Y}, timeNow(), I3Rtree),
+              Pid ! ok;
+            false ->
+              NRtree = I3Rtree,
+              Next ! {subscribe, Pid, {X, Y}}
+          end;
         false ->
-          NRtree = I3Rtree,
-          Next ! {subscribe, Pid, {X, Y}}
+          NRtree = I3Rtree
       end,
-      server(MyName, Peers, Next, NRtree, {InitialX, InitialY}, {FinalX, FinalY});
+      server(MyName, Peers, Next, NRtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY});
 
     {unsubscribe, Pid} ->
       case pidBelong(Pid, I3Rtree) of
@@ -39,30 +44,36 @@ server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}) ->
           NRtree = I3Rtree,
           Next ! {unsubscribe, Pid}
       end,
-      server(MyName, Peers, Next, NRtree, {InitialX, InitialY}, {FinalX, FinalY});
+      server(MyName, Peers, Next, NRtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY});
 
     {move, Pid, {X, Y}} ->
-      case pidBelong(Pid, I3Rtree) of
+      case rangeBelong({X, Y}, {0,0}, {MaxRangeX, MaxRangeY}) of
         true ->
-          case rangeBelong({X, Y}, {InitialX, InitialY}, {FinalX, FinalY}) of
+          case pidBelong(Pid, I3Rtree) of
             true ->
-              NRtree = i3RTree:move(Pid, {X,Y}, timeNow(), I3Rtree);
+              case rangeBelong({X, Y}, {InitialX, InitialY}, {FinalX, FinalY}) of
+                true ->
+                  NRtree = i3RTree:move(Pid, {X,Y}, timeNow(), I3Rtree);
+                false ->
+                  NRtree1 = i3RTree:move(Pid, {X,Y}, timeNow(), I3Rtree),
+                  NRtree = i3RTree:unsubscribe(Pid, NRtree1),
+                  Next ! {move, Pid, {X, Y}}
+              end;
             false ->
-              NRtree1 = i3RTree:move(Pid, {X,Y}, timeNow(), I3Rtree),
-              NRtree = i3RTree:unsubscribe(Pid, NRtree1),
-              Next ! {move, Pid, {X, Y}}
+              case rangeBelong({X, Y}, {InitialX, InitialY}, {FinalX, FinalY}) of
+                true ->
+                  NRtree = i3RTree:subscribe(Pid, {X, Y}, timeNow(), I3Rtree);
+                false ->
+                  NRtree = I3Rtree,
+                  Next ! {move, Pid, {X, Y}}
+              end
           end;
         false ->
-          case rangeBelong({X, Y}, {InitialX, InitialY}, {FinalX, FinalY}) of
-            true ->
-              NRtree = i3RTree:subscribe(Pid, {X, Y}, timeNow(), I3Rtree);
-            false ->
-              NRtree = I3Rtree,
-              Next ! {move, Pid, {X, Y}}
-          end
+          io:format("Out of bound : ~w ~p~n", [Pid, {X,Y}]),
+          NRtree = I3Rtree
       end,
       % io:format("tree: ~w~n", [NRtree]),
-      server(MyName, Peers, Next, NRtree, {InitialX, InitialY}, {FinalX, FinalY});
+      server(MyName, Peers, Next, NRtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY});
 
     {timelapse, Region, Instant, Sender, ReplyTo} ->
       case lists:member(Sender, Peers) of
@@ -76,7 +87,7 @@ server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}) ->
                   timelapse_query(Region, Instant, ReplyTo, I3Rtree, [], length(Peers))
                 end)
       end,
-      server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY});
+      server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY});
 
     {interval, Region, {Ti,Tk}, Sender, ReplyTo} ->
       case lists:member(Sender, Peers) of
@@ -90,7 +101,7 @@ server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}) ->
                   interval_query(Region, {Ti,Tk}, ReplyTo, I3Rtree, [], length(Peers))
                 end)
       end,
-      server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY});
+      server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY});
 
     {event, RegionMin, RegionMax, Sender, ReplyTo} ->
       case lists:member(Sender, Peers) of
@@ -104,7 +115,7 @@ server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}) ->
                   event_query(RegionMin, RegionMax, ReplyTo, I3Rtree, [], length(Peers))
                 end)
       end,
-      server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY});
+      server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY});
 
     {track, Pid, {Ti,Tk}, Sender, ReplyTo} ->
       case lists:member(Sender, Peers) of
@@ -118,7 +129,7 @@ server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}) ->
                   track_query(Pid, {Ti,Tk}, ReplyTo, I3Rtree, [], length(Peers))
                 end)
       end,
-      server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY});
+      server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY});
 
     {position, Pid, Sender, ReplyTo} ->
       case pidBelong(Pid, I3Rtree) of
@@ -129,7 +140,7 @@ server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}) ->
         false ->
           Next ! {position, Pid, Sender, ReplyTo}
       end,
-      server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY});
+      server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY});
 
     stop ->
       ok
