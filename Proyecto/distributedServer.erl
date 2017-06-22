@@ -69,7 +69,7 @@ server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {Ma
               end
           end;
         false ->
-          io:format("Out of bound : ~w ~p~n", [Pid, {X,Y}]),
+          io:format("out of bound")
           NRtree = I3Rtree
       end,
       % io:format("tree: ~w~n", [NRtree]),
