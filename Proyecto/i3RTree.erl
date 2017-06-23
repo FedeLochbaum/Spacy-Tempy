@@ -1,5 +1,5 @@
 - module(i3RTree).
-- export([new/0, subscribe/4, unsubscribe/2, move/4, timelapse_query/3, interval_query/3, event_query/3, track_query/3, region_query/4, position_query/2,pidBelong/2]).
+- export([new/0, subscribe/4, unsubscribe/2, move/4, timelapse_query/3, interval_query/3, event_query/3, track_query/3, region_query/4, position_query/2,pidBelong/2, weight/1, partitionalTree/3, mergeTrees/2]).
 
 new() ->
   Map = maps:new(),
@@ -31,6 +31,15 @@ unsubscribe(Pid, {Rtree, Map, LastElem} ) ->
     _ ->
       {Rtree, Map, LastElem}
   end.
+
+weight({Rtree, Map, {Last,LastTuple}}) ->
+  maps:size(Map).
+
+partitionalTree({InitialX, InitialY}, MaxRangeForPid, {Rtree, Map, {Last,LastTuple}}) ->
+  {ok,{Rtree, Map, {Last,LastTuple}}}.
+
+mergeTrees(R1,R2) -> % estos dos faltan implementar
+  R1.
 
 move(Pid, {X,Y}, Instant, {Rtree, Map, {Last,LastTuple}}) ->
   % io:format("now: ~w~n", [Instant]),

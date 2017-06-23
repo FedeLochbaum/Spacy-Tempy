@@ -14,9 +14,10 @@ start(N) ->
   s3 ! {peers, [s4,s1,s2], s4},
   s4 ! {peers, [s1,s2,s3], s1},
 
+  distributedServer:addServer(s5, [s1,s2,s3,s4], MaxRange),
 
-  Sleep = 30000,
-  Servers = [s1,s2,s3,s4],
+  Sleep = 3000,
+  Servers = [s1, s2, s3, s4],
   generateNodes(N, Servers, Sleep, MaxRange).
   % generateQueries(server,N, Sleep),
   % stop(N).

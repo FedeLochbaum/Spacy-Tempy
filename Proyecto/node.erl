@@ -22,7 +22,7 @@ init(Name, Server, Sleep, {Xmax, Ymax}) ->
   end.
 
 loop(Name, Server, Sleep, {X,Y}, {Xmax, Ymax}) ->
-  % io:format("loop: ~w ~p~n", [Name, {X,Y}]),
+  io:format("~w My position is:  ~p~n", [Name, {X,Y}]),
   XMove = rand:uniform(10),
   YMove = rand:uniform(10),
   MinX = min(X+XMove, Xmax),
