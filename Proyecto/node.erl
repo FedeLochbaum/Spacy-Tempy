@@ -22,12 +22,12 @@ init(Name, Server, Sleep, {Xmax, Ymax}) ->
   end.
 
 loop(Name, Server, Sleep, {X,Y}, {Xmax, Ymax}) ->
-  io:format("~w My position is:  ~p~n", [Name, {X,Y}]),
   XMove = rand:uniform(10),
   YMove = rand:uniform(10),
   MinX = min(X+XMove, Xmax),
   MinY = min(Y+YMove, Ymax),
   SleepR = rand:uniform(Sleep),
+  io:format("~w Send move to:  ~p~n", [Name, {MinX, MinY}]),
   Server ! {move, Name, {MinX, MinY}},
   receive
     stop ->

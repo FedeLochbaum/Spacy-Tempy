@@ -31,27 +31,38 @@ addServer(Name, Peers, MaxRange) ->
           startNewServer(Name, {MinX, MinY}, {MaxX, MaxY}, NewRtree, MaxRange, Peers, Sig),
           % S ! ok,
           % Sig ! ok,
-          sendOk(Peers),
+          sendOk(lists:subtract(Peers, [S,Sig])),
           notifyNewServer(Name, Peers)
         end).
 
 
 waitForReplies() ->
   receive
-    {minRange, NewMinRtreeForPid, MinRangeForPid} ->
+    {next, {NextInitialX, NextInitialY}, {NextFinalX, NextFinalY}, NextName} ->
       receive
-        {maxRange, NewMaxRtreeForPid, MaxRangeForPid} ->
-          Tree = i3RTree:mergeTrees(NewMinRtreeForPid,NewMaxRtreeForPid),
-          Res = {Tree, MinRangeForPid, MaxRangeForPid};
+        {previous, {PrevInitialX, PrevInitialY}, {PrevFinalX, PrevFinalY}, PreviousName} ->
+
+
+          NextName ! {ok, {NextInitialX, NextInitialY}, {NextFinalX, NextFinalY} },
+          PreviousName ! {ok, {PrevInitialX, PrevInitialY}, {PrevFinalX, PrevFinalY} },
+          Res = ok;
+          % Res = {i3RTree:new(), MinRangeForPid, MaxRangeForPid};
+          % FALTA ESTA PARTE :  DEBO DECIDIR CUAL ES EL RANGO MAX Y MIN DE CADA UNO Y COMENZAR CON UN NUEVO TREE
+
         Other ->
           io:format("receive error ~w~n", [Other]),
           Res = ok
       end;
-    {maxRange, NewMaxRtreeForPid, MaxRangeForPid} ->
+    {previous, {PrevInitialX, PrevInitialY}, {PrevFinalX, PrevFinalY}, PreviousName} ->
       receive
-        {minRange, NewMinRtreeForPid, MinRangeForPid} ->
-          Tree = i3RTree:mergeTrees(NewMinRtreeForPid,NewMaxRtreeForPid),
-          Res = {Tree, MinRangeForPid, MaxRangeForPid};
+        {next, {NextInitialX, NextInitialY}, {NextFinalX, NextFinalY}, NextName} ->
+
+          NextName ! {ok, {NextInitialX, NextInitialY}, {NextFinalX, NextFinalY} },
+          PreviousName ! {ok, {PrevInitialX, PrevInitialY}, {PrevFinalX, PrevFinalY} },
+          Res = ok;
+          % Res = {i3RTree:new(), MinRangeForPid, MaxRangeForPid};
+          % FALTA ESTA PARTE :  DEBO DECIDIR CUAL ES EL RANGO MAX Y MIN DE CADA UNO Y COMENZAR CON UN NUEVO TREE
+
         Other ->
           io:format("receive error ~w~n", [Other]),
           Res = ok
@@ -114,30 +125,32 @@ server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {Ma
       spawn(fun() ->  weight(I3Rtree, Pid, MyName, Next) end),
       receive
         {maxTreeFragment, Pid} ->
-          MinRangeForPid = {InitialX/2, FinalY/2},
-          {NewRtreeForPid, MyNewRtree} = i3RTree:partitionalTree(MinRangeForPid, {MaxRangeX,MaxRangeY}, I3Rtree),
-          Pid ! {minRange, NewRtreeForPid, MinRangeForPid},
-          Nnext = Pid,% Ojo aca si quiero probar !
+
+          Pid ! {previous, {InitialX, InitialY}, {FinalX, FinalY}, MyName},
+          Nnext = Pid,
+
           receive
-            ok ->
-              ok
+            {ok, {GNewInitialX, GNewInitialY}, {GNewFinalX, GNewFinalY} } ->
+              {NewInitialX, NewInitialY} = {GNewInitialX, GNewInitialY},
+              {NewFinalX, NewFinalY} = {GNewFinalX, GNewFinalY}
           end;
 
         {minTreeFragment, Pid} ->
-          MaxRangeForPid = {FinalX/2, FinalY/2}, % no estoy seguro.
-          {NewRtreeForPid, MyNewRtree} = i3RTree:partitionalTree({InitialX, InitialY}, MaxRangeForPid, I3Rtree),
-          Pid ! {maxRange, NewRtreeForPid, MaxRangeForPid},
+
+          Pid ! {next, {InitialX, InitialY}, {FinalX, FinalY}, MyName},
           Nnext = Next,
           receive
-            ok ->
-              ok
+            {ok, {GNewInitialX, GNewInitialY}, {GNewFinalX, GNewFinalY} } ->
+              {NewInitialX, NewInitialY} = {GNewInitialX, GNewInitialY},
+              {NewFinalX, NewFinalY} = {GNewFinalX, GNewFinalY}
           end;
 
         ok ->
-          MyNewRtree = I3Rtree,
+          {NewInitialX, NewInitialY} = {InitialX, InitialY},
+          {NewFinalX, NewFinalY} = {FinalX, FinalY},
           Nnext = Next
       end,
-      server(MyName, Peers, Nnext, MyNewRtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY});
+      server(MyName, Peers, Nnext, I3Rtree, {NewInitialX, NewInitialY}, {NewFinalX, NewFinalY}, {MaxRangeX, MaxRangeY});
 
     {subscribe, Pid, {X, Y}} ->
       case rangeBelong({X, Y}, {0,0}, {MaxRangeX, MaxRangeY}) of
