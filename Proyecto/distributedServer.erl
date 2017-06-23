@@ -23,11 +23,15 @@ addServer(Name, Peers, MaxRange) ->
         fun() ->
           Replies = getWeight(Peers),
           {S,Sig} = maxWeight(Replies),
-          sendOk(lists:subtract(Peers, [S,Sig])),
+          io:format("Selected Servers are ~w~n", [{S,Sig}]),
+          % sendOk(lists:subtract(Peers, [S,Sig])),
           S ! {maxTreeFragment, self()},
           Sig ! {minTreeFragment, self()},
           {NewRtree, {MinX, MinY}, {MaxX, MaxY}} = waitForReplies(),
           startNewServer(Name, {MinX, MinY}, {MaxX, MaxY}, NewRtree, MaxRange, Peers, Sig),
+          % S ! ok,
+          % Sig ! ok,
+          sendOk(Peers),
           notifyNewServer(Name, Peers)
         end).
 
@@ -39,7 +43,8 @@ waitForReplies() ->
         {maxRange, NewMaxRtreeForPid, MaxRangeForPid} ->
           Tree = i3RTree:mergeTrees(NewMinRtreeForPid,NewMaxRtreeForPid),
           Res = {Tree, MinRangeForPid, MaxRangeForPid};
-        _ ->
+        Other ->
+          io:format("receive error ~w~n", [Other]),
           Res = ok
       end;
     {maxRange, NewMaxRtreeForPid, MaxRangeForPid} ->
@@ -47,7 +52,8 @@ waitForReplies() ->
         {minRange, NewMinRtreeForPid, MinRangeForPid} ->
           Tree = i3RTree:mergeTrees(NewMinRtreeForPid,NewMaxRtreeForPid),
           Res = {Tree, MinRangeForPid, MaxRangeForPid};
-        _ ->
+        Other ->
+          io:format("receive error ~w~n", [Other]),
           Res = ok
       end
   end,
@@ -99,6 +105,40 @@ Server ! stop.
 
 server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}) ->
   receive
+
+    {newServer, Name} ->
+      io:format("New peer: ~w~n", [Peers ++ [Name]]),
+      server(MyName, Peers ++ [Name], Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY});
+
+    {weight, Pid} ->
+      spawn(fun() ->  weight(I3Rtree, Pid, MyName, Next) end),
+      receive
+        {maxTreeFragment, Pid} ->
+          MinRangeForPid = {InitialX/2, FinalY/2},
+          {NewRtreeForPid, MyNewRtree} = i3RTree:partitionalTree(MinRangeForPid, {MaxRangeX,MaxRangeY}, I3Rtree),
+          Pid ! {minRange, NewRtreeForPid, MinRangeForPid},
+          Nnext = Pid,% Ojo aca si quiero probar !
+          receive
+            ok ->
+              ok
+          end;
+
+        {minTreeFragment, Pid} ->
+          MaxRangeForPid = {FinalX/2, FinalY/2}, % no estoy seguro.
+          {NewRtreeForPid, MyNewRtree} = i3RTree:partitionalTree({InitialX, InitialY}, MaxRangeForPid, I3Rtree),
+          Pid ! {maxRange, NewRtreeForPid, MaxRangeForPid},
+          Nnext = Next,
+          receive
+            ok ->
+              ok
+          end;
+
+        ok ->
+          MyNewRtree = I3Rtree,
+          Nnext = Next
+      end,
+      server(MyName, Peers, Nnext, MyNewRtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY});
+
     {subscribe, Pid, {X, Y}} ->
       case rangeBelong({X, Y}, {0,0}, {MaxRangeX, MaxRangeY}) of
         true ->
@@ -221,31 +261,6 @@ server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {Ma
           Next ! {position, Pid, Sender, ReplyTo}
       end,
       server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY});
-
-    {newServer, Name} ->
-      io:format("New peer: ~w~n", [Peers ++ [Name]]),
-      server(MyName, Peers ++ [Name], Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY});
-
-    {weight, Pid} ->
-      spawn(fun() ->  weight(I3Rtree, Pid, MyName, Next) end),
-      receive
-        {maxTreeFragment, Pid} ->
-          MinRangeForPid = {InitialX/2, FinalY/2},
-          % el arbol de todos los mayores a este rango
-          {NewRtreeForPid, MyNewRtree} = i3RTree:partitionalTree(MinRangeForPid, {inf,inf}, I3Rtree),
-          Pid ! {minRange, NewRtreeForPid, MinRangeForPid},
-          Nnext = Next;
-          % Nnext = Pid; % Ojo aca si quiero probar !
-        {minTreeFragment, Pid} ->
-          MaxRangeForPid = {FinalX/2, FinalY/2}, % no estoy seguro.
-          {NewRtreeForPid, MyNewRtree} = i3RTree:partitionalTree({InitialX, InitialY}, MaxRangeForPid, I3Rtree),
-          Pid ! {maxRange, NewRtreeForPid, MaxRangeForPid},
-          Nnext = Next;
-        ok ->
-          MyNewRtree = I3Rtree,
-          Nnext = Next
-      end,
-      server(MyName, Peers, Nnext, MyNewRtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY});
 
     stop ->
       ok
