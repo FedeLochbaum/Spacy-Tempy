@@ -35,54 +35,6 @@ unsubscribe(Pid, {Rtree, Map, LastElem} ) ->
 weight({Rtree, Map, {Last,LastTuple}}) ->
   maps:size(Map).
 
-% lastForNewPartitionalTree(Map, LastElem, {InitialX, InitialY}, {FinalX, FinalY}) ->
-%   case LastElem of
-%     {Last,{{X,Y,T}, Instant, P3d, Pa, Ps}} ->
-%       case isPartOfRegion({X,Y,T}, {InitialX, InitialY}, {FinalX, FinalY})  of
-%         true ->
-%           Res = {LastElem, Ps};
-%         false ->
-%           Res = {0,0},
-%           lastForNewPartitionalTree(Map, Pa, {InitialX, InitialY}, {FinalX, FinalY})
-%       end;
-%     _ ->
-%       Res = {0, 0}
-%   end,
-%   Res.
-%
-% partitionalMap({InitialX, InitialY}, {FinalX, FinalY}, Map) ->
-%   F = fun(K,V) ->
-%       case V of
-%         {{X,Y,T}, Instant, P3d, Pa, Ps} ->
-%           Res = isPartOfRegion({X,Y,T}, {InitialX, InitialY}, {FinalX, FinalY});
-%         _ ->
-%           Res = false
-%       end,
-%       Res
-%       end,
-%    Nmap = maps:filter(F,Map),
-%    Names =  maps:keys(Nmap),
-%    {Nmap, removeKeys(Names,Map)}.
-%
-%
-%  removeKeys(Names, Map) ->
-%    F = fun(Name, AccMap) ->
-%         maps:remove(Name,AccMap)
-%       end,
-%    lists:foldl(F, Map, Names).
-
-% partitionalTree({InitialX, InitialY}, {FinalX, FinalY}, {Rtree, Map, LastElem}) ->
-  % cuando temrine esto, descomentar el next en el server.
-  % {NewLastTuple, OldLastTuple} = lastForNewPartitionalTree(Map, LastElem, {InitialX, InitialY}, {FinalX, FinalY}),
-  % {Nmap, NewOldMap} = partitionalMap({InitialX, InitialY}, {FinalX, FinalY}, Map),
-
-  % {{rstar:new(3), Nmap, NewLastTuple}, {Rtree, NewOldMap, OldLastTuple}}.
-  % {i3RTree:new(),{Rtree, Map, LastElem}}.
-%Me parece mejor crear un nuevo arbol pero solo transpasarle los otros datos.
-
-% mergeTrees(R1,R2) -> % faltan implementar
-  % R1.
-
 move(Pid, {X,Y}, Instant, {Rtree, Map, {Last,LastTuple}}) ->
   Mbr = {X, Y, Instant},
   Pa = LastTuple,
@@ -236,3 +188,52 @@ parseReply(Reply) ->
           Res
         end,
   lists:map(Fun,Reply).
+
+
+% lastForNewPartitionalTree(Map, LastElem, {InitialX, InitialY}, {FinalX, FinalY}) ->
+%   case LastElem of
+%     {Last,{{X,Y,T}, Instant, P3d, Pa, Ps}} ->
+%       case isPartOfRegion({X,Y,T}, {InitialX, InitialY}, {FinalX, FinalY})  of
+%         true ->
+%           Res = {LastElem, Ps};
+%         false ->
+%           Res = {0,0},
+%           lastForNewPartitionalTree(Map, Pa, {InitialX, InitialY}, {FinalX, FinalY})
+%       end;
+%     _ ->
+%       Res = {0, 0}
+%   end,
+%   Res.
+%
+% partitionalMap({InitialX, InitialY}, {FinalX, FinalY}, Map) ->
+%   F = fun(K,V) ->
+%       case V of
+%         {{X,Y,T}, Instant, P3d, Pa, Ps} ->
+%           Res = isPartOfRegion({X,Y,T}, {InitialX, InitialY}, {FinalX, FinalY});
+%         _ ->
+%           Res = false
+%       end,
+%       Res
+%       end,
+%    Nmap = maps:filter(F,Map),
+%    Names =  maps:keys(Nmap),
+%    {Nmap, removeKeys(Names,Map)}.
+%
+%
+%  removeKeys(Names, Map) ->
+%    F = fun(Name, AccMap) ->
+%         maps:remove(Name,AccMap)
+%       end,
+%    lists:foldl(F, Map, Names).
+
+% partitionalTree({InitialX, InitialY}, {FinalX, FinalY}, {Rtree, Map, LastElem}) ->
+  % cuando temrine esto, descomentar el next en el server.
+  % {NewLastTuple, OldLastTuple} = lastForNewPartitionalTree(Map, LastElem, {InitialX, InitialY}, {FinalX, FinalY}),
+  % {Nmap, NewOldMap} = partitionalMap({InitialX, InitialY}, {FinalX, FinalY}, Map),
+
+  % {{rstar:new(3), Nmap, NewLastTuple}, {Rtree, NewOldMap, OldLastTuple}}.
+  % {i3RTree:new(),{Rtree, Map, LastElem}}.
+%Me parece mejor crear un nuevo arbol pero solo transpasarle los otros datos.
+
+% mergeTrees(R1,R2) -> % faltan implementar
+  % R1.

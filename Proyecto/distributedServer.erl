@@ -25,29 +25,23 @@ addServer(Name, Peers, MaxRange) ->
           {S,Sig} = maxWeight(Replies),
           io:format("Selected Servers are ~w~n", [{S,Sig}]),
           % sendOk(lists:subtract(Peers, [S,Sig])),
-          S ! {maxTreeFragment, self()},
-          Sig ! {minTreeFragment, self()},
+          S ! {myNext, self()},
+          Sig ! {myPrevious, self()},
           {NewRtree, {MinX, MinY}, {MaxX, MaxY}} = waitForReplies(),
           startNewServer(Name, {MinX, MinY}, {MaxX, MaxY}, NewRtree, MaxRange, Peers, Sig),
-          % S ! ok,
-          % Sig ! ok,
-          sendOk(lists:subtract(Peers, [S,Sig])),
+          sendOk(lists:subtract(Peers, [S,Sig])), %lo ideal seria que no se detengan todos.
           notifyNewServer(Name, Peers)
         end).
 
 
 waitForReplies() ->
   receive
-    {next, {NextInitialX, NextInitialY}, {NextFinalX, NextFinalY}, NextName} ->
+    {next, {NextInitialX, NextInitialY}, {NextFinalX, NextFinalY}, NextName} ->  %  Next = mi anterior
       receive
-        {previous, {PrevInitialX, PrevInitialY}, {PrevFinalX, PrevFinalY}, PreviousName} ->
+        {previous, {PrevInitialX, PrevInitialY}, {PrevFinalX, PrevFinalY}, PreviousName} -> %Previou = mi siguiente
 
-
-          NextName ! {ok, {NextInitialX, NextInitialY}, {NextFinalX, NextFinalY} },
-          PreviousName ! {ok, {PrevInitialX, PrevInitialY}, {PrevFinalX, PrevFinalY} },
-          Res = ok;
-          % Res = {i3RTree:new(), MinRangeForPid, MaxRangeForPid};
-          % FALTA ESTA PARTE :  DEBO DECIDIR CUAL ES EL RANGO MAX Y MIN DE CADA UNO Y COMENZAR CON UN NUEVO TREE
+          Res = calculateNewRanges({ {NextInitialX, NextInitialY}, {NextFinalX, NextFinalY}, NextName},
+                                      { {PrevInitialX, PrevInitialY}, {PrevFinalX, PrevFinalY}, PreviousName});
 
         Other ->
           io:format("receive error ~w~n", [Other]),
@@ -57,19 +51,46 @@ waitForReplies() ->
       receive
         {next, {NextInitialX, NextInitialY}, {NextFinalX, NextFinalY}, NextName} ->
 
-          NextName ! {ok, {NextInitialX, NextInitialY}, {NextFinalX, NextFinalY} },
-          PreviousName ! {ok, {PrevInitialX, PrevInitialY}, {PrevFinalX, PrevFinalY} },
-          Res = ok;
-          % Res = {i3RTree:new(), MinRangeForPid, MaxRangeForPid};
-          % FALTA ESTA PARTE :  DEBO DECIDIR CUAL ES EL RANGO MAX Y MIN DE CADA UNO Y COMENZAR CON UN NUEVO TREE
+          Res = calculateNewRanges({{NextInitialX, NextInitialY}, {NextFinalX, NextFinalY}, NextName},
+                                      {{PrevInitialX, PrevInitialY}, {PrevFinalX, PrevFinalY}, PreviousName});
 
         Other ->
           io:format("receive error ~w~n", [Other]),
           Res = ok
       end
   end,
-
   Res.
+
+
+calculateNewRanges({{NextInitialX, NextInitialY}, {NextFinalX, NextFinalY}, NextName}, {{PrevInitialX, PrevInitialY}, {PrevFinalX, PrevFinalY}, PreviousName}) ->
+  if
+    NextInitialX =< PrevInitialX andalso NextInitialY =< PrevInitialY -> %  Next = mi anterior %Previou = mi siguiente
+      io:format("Next con estas cordenadas ~w es mas chico que estas cordenadas ~w~n", [{NextInitialX,NextInitialY, NextName}, {PrevInitialX, PrevInitialY, PreviousName}]),
+
+      MyInitialX = (PrevInitialX - NextInitialX) / 2,
+      MyInitialY = (PrevInitialY - NextInitialY) / 2,
+      MyFinalX   = (PrevFinalX   - NextFinalX)   / 2,
+      MyFinalY   = (PrevFinalY   - NextFinalY)   / 2,
+
+      io:format("myPrevious ~w~n", [{ok, {NextInitialX, NextInitialY}, {NextFinalX, MyInitialY} }]),
+      NextName ! {ok, {NextInitialX, NextInitialY}, {NextFinalX, MyInitialY} },
+      io:format("myNext ~w~n", [{ok, {PrevInitialX, MyFinalY}, {PrevFinalX, PrevFinalY} }]),
+      PreviousName ! {ok, {PrevInitialX, MyFinalY}, {PrevFinalX, PrevFinalY} };
+    true ->
+      io:format("Next con estas cordenadas ~w es mas chico que estas cordenadas ~w~n", [{PrevInitialX, PrevInitialY, PreviousName}, {NextInitialX,NextInitialY, NextName}]),
+
+      MyInitialX = (NextInitialX - PrevInitialX) / 2,
+      MyInitialY = (NextInitialY - PrevInitialY) / 2,
+      MyFinalX   = (NextFinalX   - PrevFinalX)   / 2,
+      MyFinalY   = (NextFinalY   - PrevFinalY)   / 2,
+
+      io:format("myPrevious ~w~n", [{ok, {MyFinalX, NextInitialY}, {NextFinalX, NextFinalY} }]),
+      NextName ! {ok, {MyFinalX, NextInitialY}, {NextFinalX, NextFinalY} },
+      io:format("myNext ~w~n", [{ok, {PrevInitialX, PrevInitialY}, {MyInitialX, PrevFinalY} }]),
+      PreviousName ! {ok, {PrevInitialX, PrevInitialY}, {MyInitialX, PrevFinalY} }
+  end,
+  {i3RTree:new(), {MyInitialX, MyInitialY}, {MyFinalX, MyFinalY}}.
+
 
 
 getWeight(Peers) ->
@@ -124,9 +145,9 @@ server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {Ma
     {weight, Pid} ->
       spawn(fun() ->  weight(I3Rtree, Pid, MyName, Next) end),
       receive
-        {maxTreeFragment, Pid} ->
+        {myNext, Pid} ->
 
-          Pid ! {previous, {InitialX, InitialY}, {FinalX, FinalY}, MyName},
+          Pid ! {next, {InitialX, InitialY}, {FinalX, FinalY}, MyName},
           Nnext = Pid,
 
           receive
@@ -135,10 +156,11 @@ server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {Ma
               {NewFinalX, NewFinalY} = {GNewFinalX, GNewFinalY}
           end;
 
-        {minTreeFragment, Pid} ->
+        {myPrevious, Pid} ->
 
-          Pid ! {next, {InitialX, InitialY}, {FinalX, FinalY}, MyName},
+          Pid ! {previous, {InitialX, InitialY}, {FinalX, FinalY}, MyName},
           Nnext = Next,
+
           receive
             {ok, {GNewInitialX, GNewInitialY}, {GNewFinalX, GNewFinalY} } ->
               {NewInitialX, NewInitialY} = {GNewInitialX, GNewInitialY},
