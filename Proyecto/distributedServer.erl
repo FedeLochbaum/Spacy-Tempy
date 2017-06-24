@@ -25,8 +25,8 @@ addServer(Name, Peers, MaxRange) ->
           {S,Sig} = maxWeight(Replies),
           io:format("Selected Servers are ~w~n", [{S,Sig}]),
           % sendOk(lists:subtract(Peers, [S,Sig])),
-          S ! {myNext, self()},
-          Sig ! {myPrevious, self()},
+          S ! {myPrevious, self(), Name},
+          Sig ! {myNext, self()},
           {NewRtree, {MinX, MinY}, {MaxX, MaxY}} = waitForReplies(),
           startNewServer(Name, {MinX, MinY}, {MaxX, MaxY}, NewRtree, MaxRange, Peers, Sig),
           sendOk(lists:subtract(Peers, [S,Sig])), %lo ideal seria que no se detengan todos.
@@ -36,23 +36,23 @@ addServer(Name, Peers, MaxRange) ->
 
 waitForReplies() ->
   receive
-    {next, {NextInitialX, NextInitialY}, {NextFinalX, NextFinalY}, NextName} ->  %  Next = mi anterior
+    {myPrevious, {MyPreviousInitialX, MyPreviousInitialY}, {MyPreviousFinalX, MyPreviousFinalY}, MyPrevious} ->  %  Next = mi anterior
       receive
-        {previous, {PrevInitialX, PrevInitialY}, {PrevFinalX, PrevFinalY}, PreviousName} -> %Previou = mi siguiente
+        {myNext, {MyNextInitialX, MyNextInitialY}, {MyNextFinalX, MyNextFinalY}, MyNext} -> %Previou = mi siguiente
 
-          Res = calculateNewRanges({ {NextInitialX, NextInitialY}, {NextFinalX, NextFinalY}, NextName},
-                                      { {PrevInitialX, PrevInitialY}, {PrevFinalX, PrevFinalY}, PreviousName});
+          Res = calculateNewRanges({ {MyPreviousInitialX, MyPreviousInitialY}, {MyPreviousFinalX, MyPreviousFinalY}, MyPrevious},
+                                      { {MyNextInitialX, MyNextInitialY}, {MyNextFinalX, MyNextFinalY}, MyNext});
 
         Other ->
           io:format("receive error ~w~n", [Other]),
           Res = ok
       end;
-    {previous, {PrevInitialX, PrevInitialY}, {PrevFinalX, PrevFinalY}, PreviousName} ->
+    {myNext, {MyNextInitialX, MyNextInitialY}, {MyNextFinalX, MyNextFinalY}, MyNext} ->
       receive
-        {next, {NextInitialX, NextInitialY}, {NextFinalX, NextFinalY}, NextName} ->
+        {myPrevious, {MyPreviousInitialX, MyPreviousInitialY}, {MyPreviousFinalX, MyPreviousFinalY}, MyPrevious} ->
 
-          Res = calculateNewRanges({{NextInitialX, NextInitialY}, {NextFinalX, NextFinalY}, NextName},
-                                      {{PrevInitialX, PrevInitialY}, {PrevFinalX, PrevFinalY}, PreviousName});
+          Res = calculateNewRanges({ {MyPreviousInitialX, MyPreviousInitialY}, {MyPreviousFinalX, MyPreviousFinalY}, MyPrevious},
+                                      { {MyNextInitialX, MyNextInitialY}, {MyNextFinalX, MyNextFinalY}, MyNext});
 
         Other ->
           io:format("receive error ~w~n", [Other]),
@@ -62,32 +62,34 @@ waitForReplies() ->
   Res.
 
 
-calculateNewRanges({{NextInitialX, NextInitialY}, {NextFinalX, NextFinalY}, NextName}, {{PrevInitialX, PrevInitialY}, {PrevFinalX, PrevFinalY}, PreviousName}) ->
+calculateNewRanges({ {MyPreviousInitialX, MyPreviousInitialY}, {MyPreviousFinalX, MyPreviousFinalY}, MyPrevious}, { {MyNextInitialX, MyNextInitialY}, {MyNextFinalX, MyNextFinalY}, MyNext}) ->
+  io:format("Los servers son ~w~n y  ~w~n", [{ {MyPreviousInitialX, MyPreviousInitialY}, {MyPreviousFinalX, MyPreviousFinalY}, MyPrevious}, { {MyNextInitialX, MyNextInitialY}, {MyNextFinalX, MyNextFinalY}, MyNext}]),
   if
-    NextInitialX =< PrevInitialX andalso NextInitialY =< PrevInitialY -> %  Next = mi anterior %Previou = mi siguiente
-      io:format("Next con estas cordenadas ~w es mas chico que estas cordenadas ~w~n", [{NextInitialX,NextInitialY, NextName}, {PrevInitialX, PrevInitialY, PreviousName}]),
+    MyPreviousInitialX =< MyNextInitialX andalso MyPreviousInitialY =< MyNextInitialY ->
 
-      MyInitialX = (PrevInitialX - NextInitialX) / 2,
-      MyInitialY = (PrevInitialY - NextInitialY) / 2,
-      MyFinalX   = (PrevFinalX   - NextFinalX)   / 2,
-      MyFinalY   = (PrevFinalY   - NextFinalY)   / 2,
+      MyInitialX = (MyNextInitialX + MyPreviousInitialX) / 2,
+      MyInitialY = (MyNextInitialY + MyPreviousInitialY) / 2,
+      MyFinalX   = (MyNextFinalX   + MyPreviousFinalX)   / 2,
+      MyFinalY   = (MyNextFinalY   + MyPreviousFinalY)   / 2,
 
-      io:format("myPrevious ~w~n", [{ok, {NextInitialX, NextInitialY}, {NextFinalX, MyInitialY} }]),
-      NextName ! {ok, {NextInitialX, NextInitialY}, {NextFinalX, MyInitialY} },
-      io:format("myNext ~w~n", [{ok, {PrevInitialX, MyFinalY}, {PrevFinalX, PrevFinalY} }]),
-      PreviousName ! {ok, {PrevInitialX, MyFinalY}, {PrevFinalX, PrevFinalY} };
+      io:format("myPrevious ~w~n", [{ok, {MyPreviousInitialX, MyPreviousInitialY}, {MyPreviousFinalX, MyInitialY} }]),
+      MyPrevious ! {ok, {MyPreviousInitialX, MyPreviousInitialY}, {MyPreviousFinalX, MyInitialY} },
+
+      io:format("myNext ~w~n", [{ok, {MyNextInitialX, MyFinalY}, {MyNextFinalX, MyNextFinalY} }]),
+      MyNext ! {ok, {MyNextInitialX, MyFinalY}, {MyNextFinalX, MyNextFinalY} };
+
     true ->
-      io:format("Next con estas cordenadas ~w es mas chico que estas cordenadas ~w~n", [{PrevInitialX, PrevInitialY, PreviousName}, {NextInitialX,NextInitialY, NextName}]),
 
-      MyInitialX = (NextInitialX - PrevInitialX) / 2,
-      MyInitialY = (NextInitialY - PrevInitialY) / 2,
-      MyFinalX   = (NextFinalX   - PrevFinalX)   / 2,
-      MyFinalY   = (NextFinalY   - PrevFinalY)   / 2,
+      MyInitialX = (MyPreviousInitialX + MyNextInitialX) / 2,
+      MyInitialY = (MyPreviousInitialY + MyNextInitialY) / 2,
+      MyFinalX   = (MyPreviousFinalX   + MyNextFinalX)   / 2,
+      MyFinalY   = (MyPreviousFinalY   + MyNextFinalY)   / 2,
 
-      io:format("myPrevious ~w~n", [{ok, {MyFinalX, NextInitialY}, {NextFinalX, NextFinalY} }]),
-      NextName ! {ok, {MyFinalX, NextInitialY}, {NextFinalX, NextFinalY} },
-      io:format("myNext ~w~n", [{ok, {PrevInitialX, PrevInitialY}, {MyInitialX, PrevFinalY} }]),
-      PreviousName ! {ok, {PrevInitialX, PrevInitialY}, {MyInitialX, PrevFinalY} }
+      % io:format("myPrevious ~w~n", [{ok, {MyFinalX, MyPreviousInitialY}, {MyPreviousFinalX, MyPreviousFinalY}} ]),
+      MyPrevious ! {ok, {MyFinalX, MyPreviousInitialY}, {MyPreviousFinalX, MyPreviousFinalY} },
+
+      % io:format("myNext ~w~n", [{ok, {MyNextInitialX, MyNextInitialY}, {MyInitialX, MyNextFinalY}} ]),
+      MyNext ! {ok, {MyNextInitialX, MyNextInitialY}, {MyInitialX, MyNextFinalY} }
   end,
   {i3RTree:new(), {MyInitialX, MyInitialY}, {MyFinalX, MyFinalY}}.
 
@@ -145,10 +147,10 @@ server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {Ma
     {weight, Pid} ->
       spawn(fun() ->  weight(I3Rtree, Pid, MyName, Next) end),
       receive
-        {myNext, Pid} ->
+        {myPrevious, Pid, NewNext} ->
 
-          Pid ! {next, {InitialX, InitialY}, {FinalX, FinalY}, MyName},
-          Nnext = Pid,
+          Pid ! {myPrevious, {InitialX, InitialY}, {FinalX, FinalY}, MyName},
+          Nnext = NewNext,
 
           receive
             {ok, {GNewInitialX, GNewInitialY}, {GNewFinalX, GNewFinalY} } ->
@@ -156,9 +158,9 @@ server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {Ma
               {NewFinalX, NewFinalY} = {GNewFinalX, GNewFinalY}
           end;
 
-        {myPrevious, Pid} ->
+        {myNext, Pid} ->
 
-          Pid ! {previous, {InitialX, InitialY}, {FinalX, FinalY}, MyName},
+          Pid ! {myNext, {InitialX, InitialY}, {FinalX, FinalY}, MyName},
           Nnext = Next,
 
           receive
