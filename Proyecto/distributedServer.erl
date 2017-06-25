@@ -14,12 +14,8 @@ init(Name, {InitialX, InitialY}, {FinalX, FinalY}, MaxRange) ->
       ok
   end.
 
-startNewServer(Name, {MinX, MinY}, {MaxX, MaxY}, NewRtree, MaxRange, Peers, Sig) ->
-  io:format(" Start New Serve : ~w ~w ~w ~w ~n", [Name, {MinX, MinY}, {MaxX, MaxY}, Sig]),
-  register(Name, spawn(fun() -> server(Name, Peers, Sig, NewRtree,  {MinX, MinY}, {MaxX, MaxY}, MaxRange) end)).
-
 addServer(Name, Peers, MaxRange) ->
-  spawn(
+  register(Name, spawn(
         fun() ->
           Replies = getWeight(Peers),
           {S,Sig} = maxWeight(Replies),
@@ -28,17 +24,18 @@ addServer(Name, Peers, MaxRange) ->
           S ! {myPrevious, self(), Name},
           Sig ! {myNext, self()},
           {NewRtree, {MinX, MinY}, {MaxX, MaxY}} = waitForReplies(),
-          startNewServer(Name, {MinX, MinY}, {MaxX, MaxY}, NewRtree, MaxRange, Peers, Sig),
-          sendOk(lists:subtract(Peers, [S,Sig])), %lo ideal seria que no se detengan todos.
-          notifyNewServer(Name, Peers)
-        end).
+          sendOk(lists:subtract(Peers, [S,Sig])),
+          notifyNewServer(Name, Peers),
+          io:format(" Start New Serve : ~w ~w ~w ~w ~n", [Name, {MinX, MinY}, {MaxX, MaxY}, Sig]),
+          server(Name, Peers, Sig, NewRtree,  {MinX, MinY}, {MaxX, MaxY}, MaxRange)
+        end)).
 
 
 waitForReplies() ->
   receive
-    {myPrevious, {MyPreviousInitialX, MyPreviousInitialY}, {MyPreviousFinalX, MyPreviousFinalY}, MyPrevious} ->  %  Next = mi anterior
+    {myPrevious, {MyPreviousInitialX, MyPreviousInitialY}, {MyPreviousFinalX, MyPreviousFinalY}, MyPrevious} ->
       receive
-        {myNext, {MyNextInitialX, MyNextInitialY}, {MyNextFinalX, MyNextFinalY}, MyNext} -> %Previou = mi siguiente
+        {myNext, {MyNextInitialX, MyNextInitialY}, {MyNextFinalX, MyNextFinalY}, MyNext} ->
 
           Res = calculateNewRanges({ {MyPreviousInitialX, MyPreviousInitialY}, {MyPreviousFinalX, MyPreviousFinalY}, MyPrevious},
                                       { {MyNextInitialX, MyNextInitialY}, {MyNextFinalX, MyNextFinalY}, MyNext});
@@ -63,7 +60,7 @@ waitForReplies() ->
 
 
 calculateNewRanges({ {MyPreviousInitialX, MyPreviousInitialY}, {MyPreviousFinalX, MyPreviousFinalY}, MyPrevious}, { {MyNextInitialX, MyNextInitialY}, {MyNextFinalX, MyNextFinalY}, MyNext}) ->
-  io:format("Los servers son ~w~n y  ~w~n", [{ {MyPreviousInitialX, MyPreviousInitialY}, {MyPreviousFinalX, MyPreviousFinalY}, MyPrevious}, { {MyNextInitialX, MyNextInitialY}, {MyNextFinalX, MyNextFinalY}, MyNext}]),
+  io:format("Los servers son ~w y  ~w~n", [{ {MyPreviousInitialX, MyPreviousInitialY}, {MyPreviousFinalX, MyPreviousFinalY}, MyPrevious}, { {MyNextInitialX, MyNextInitialY}, {MyNextFinalX, MyNextFinalY}, MyNext}]),
   if
     MyPreviousInitialX =< MyNextInitialX andalso MyPreviousInitialY =< MyNextInitialY ->
 
@@ -226,7 +223,7 @@ server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {Ma
               end
           end;
         false ->
-          io:format("out of bound"),
+          io:format("out of bound ~n"),
           NRtree = I3Rtree
       end,
       % io:format("tree: ~w~n", [NRtree]),

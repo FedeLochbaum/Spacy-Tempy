@@ -16,7 +16,9 @@ start(N) ->
 
   distributedServer:addServer(s5, [s1,s2,s3,s4], MaxRange),
 
-  Sleep = 400,
+  % distributedServer:addServer(s6, [s1,s2,s3,s4,s5], MaxRange),
+
+  Sleep = 2000,
   Servers = [s1, s2, s3, s4],
   generateNodes(N, Servers, Sleep, MaxRange).
   % generateQueries(server,N, Sleep),
