@@ -20,11 +20,10 @@ addServer(Name, Peers, MaxRange) ->
           Replies = getWeight(Peers),
           {S,Sig} = maxWeight(Replies),
           io:format("Selected Servers are ~w~n", [{S,Sig}]),
-          % sendOk(lists:subtract(Peers, [S,Sig])),
+          sendOk(lists:subtract(Peers, [S,Sig])),
           S ! {myPrevious, self(), Name},
           Sig ! {myNext, self()},
           {NewRtree, {MinX, MinY}, {MaxX, MaxY}} = waitForReplies(),
-          sendOk(lists:subtract(Peers, [S,Sig])),
           notifyNewServer(Name, Peers),
           io:format(" Start New Serve : ~w ~w ~w ~w ~n", [Name, {MinX, MinY}, {MaxX, MaxY}, Sig]),
           server(Name, Peers, Sig, NewRtree,  {MinX, MinY}, {MaxX, MaxY}, MaxRange)
@@ -54,7 +53,10 @@ waitForReplies() ->
         Other ->
           io:format("receive error ~w~n", [Other]),
           Res = ok
-      end
+      end;
+    Other ->
+      io:format("receive error ~w~n", [Other]),
+      Res = ok
   end,
   Res.
 
@@ -69,10 +71,10 @@ calculateNewRanges({ {MyPreviousInitialX, MyPreviousInitialY}, {MyPreviousFinalX
       MyFinalX   = (MyNextFinalX   + MyPreviousFinalX)   / 2,
       MyFinalY   = (MyNextFinalY   + MyPreviousFinalY)   / 2,
 
-      io:format("myPrevious ~w~n", [{ok, {MyPreviousInitialX, MyPreviousInitialY}, {MyPreviousFinalX, MyInitialY} }]),
+      % io:format("myPrevious ~w~n", [{ok, {MyPreviousInitialX, MyPreviousInitialY}, {MyPreviousFinalX, MyInitialY} }]),
       MyPrevious ! {ok, {MyPreviousInitialX, MyPreviousInitialY}, {MyPreviousFinalX, MyInitialY} },
 
-      io:format("myNext ~w~n", [{ok, {MyNextInitialX, MyFinalY}, {MyNextFinalX, MyNextFinalY} }]),
+      % io:format("myNext ~w~n", [{ok, {MyNextInitialX, MyFinalY}, {MyNextFinalX, MyNextFinalY} }]),
       MyNext ! {ok, {MyNextInitialX, MyFinalY}, {MyNextFinalX, MyNextFinalY} };
 
     true ->
@@ -138,7 +140,7 @@ server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {Ma
   receive
 
     {newServer, Name} ->
-      io:format("New peer: ~w~n", [Peers ++ [Name]]),
+      io:format("~w New peer: ~w~n", [MyName, Peers ++ [Name]]),
       server(MyName, Peers ++ [Name], Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY});
 
     {weight, Pid} ->
