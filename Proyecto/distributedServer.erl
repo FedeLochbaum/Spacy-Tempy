@@ -1,5 +1,5 @@
 -module(distributedServer).
--export([start/4,stop/1,timeNow/0, addServer/3]).
+-export([start/4,stop/1,timeNow/0, addServer/3, addServerv2/3]).
 -import(rstar, [rstar/1]).
 
 start(Name, {InitialX, InitialY}, {FinalX, FinalY}, MaxRange) ->
@@ -13,6 +13,20 @@ init(Name, {InitialX, InitialY}, {FinalX, FinalY}, MaxRange) ->
     stop ->
       ok
   end.
+
+addServerv2(Name, Peers, MaxRange) ->
+  register(Name, spawn(
+        fun() ->
+          Replies = getWeight(Peers),
+          {S,Sig} = maxWeight(Replies),
+          io:format("Selected Servers are ~w~n", [S]),
+          sendOk(lists:subtract(Peers, [S])),
+          S ! {myPrevious, self(), Name},
+          {NewRtree, {MinX, MinY}, {MaxX, MaxY}} = waitForRepliesv2(),
+          notifyNewServer(Name, Peers),
+          io:format(" Start New Serve : ~w ~w ~w ~w ~n", [Name, {MinX, MinY}, {MaxX, MaxY}, Sig]),
+          server(Name, Peers, Sig, NewRtree,  {MinX, MinY}, {MaxX, MaxY}, MaxRange)
+        end)).
 
 addServer(Name, Peers, MaxRange) ->
   register(Name, spawn(
@@ -29,6 +43,17 @@ addServer(Name, Peers, MaxRange) ->
           server(Name, Peers, Sig, NewRtree,  {MinX, MinY}, {MaxX, MaxY}, MaxRange)
         end)).
 
+
+
+waitForRepliesv2() ->
+  receive
+    {myPrevious, {MyPreviousInitialX, MyPreviousInitialY}, {MyPreviousFinalX, MyPreviousFinalY}, MyPrevious} ->
+        Res = calculateNewRangesv2({ {MyPreviousInitialX, MyPreviousInitialY}, {MyPreviousFinalX, MyPreviousFinalY}, MyPrevious });
+    Other ->
+      io:format("receive error ~w~n", [Other]),
+      Res = ok
+  end,
+  Res.
 
 waitForReplies() ->
   receive
@@ -60,6 +85,17 @@ waitForReplies() ->
   end,
   Res.
 
+
+calculateNewRangesv2({{MyPreviousInitialX, MyPreviousInitialY}, {MyPreviousFinalX, MyPreviousFinalY}, MyPrevious}) ->
+  MyInitialX = MyPreviousInitialX,
+  MyInitialY = MyPreviousInitialY,
+  MyFinalX   = (MyPreviousInitialX + MyPreviousFinalX) /2,
+  MyFinalY   = MyPreviousFinalY,
+
+  io:format("nueva configuracion de server ~w~n", [{ok, {MyFinalX, MyPreviousInitialY}, {MyPreviousFinalX, MyPreviousFinalY} }]),
+  MyPrevious ! {ok, {MyFinalX, MyPreviousInitialY}, {MyPreviousFinalX, MyPreviousFinalY} },
+
+  {i3RTree:new(), {MyInitialX, MyInitialY}, {MyFinalX, MyFinalY}}.
 
 calculateNewRanges({ {MyPreviousInitialX, MyPreviousInitialY}, {MyPreviousFinalX, MyPreviousFinalY}, MyPrevious}, { {MyNextInitialX, MyNextInitialY}, {MyNextFinalX, MyNextFinalY}, MyNext}) ->
   io:format("Los servers son ~w y  ~w~n", [{ {MyPreviousInitialX, MyPreviousInitialY}, {MyPreviousFinalX, MyPreviousFinalY}, MyPrevious}, { {MyNextInitialX, MyNextInitialY}, {MyNextFinalX, MyNextFinalY}, MyNext}]),

@@ -22,8 +22,8 @@ init(Name, Server, Sleep, {Xmax, Ymax}) ->
   end.
 
 loop(Name, Server, Sleep, {X,Y}, {Xmax, Ymax}) ->
-  XMove = rand:uniform(10),
-  YMove = rand:uniform(10),
+  XMove = rand:uniform(2),
+  YMove = rand:uniform(2),
   MinX = min(X+XMove, Xmax),
   MinY = min(Y+YMove, Ymax),
   SleepR = rand:uniform(Sleep),
