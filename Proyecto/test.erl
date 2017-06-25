@@ -14,11 +14,10 @@ start(N) ->
   s3 ! {peers, [s4,s1,s2], s4},
   s4 ! {peers, [s1,s2,s3], s1},
 
-  distributedServer:addServerv2(s5, [s1,s2,s3,s4], MaxRange),
 
-  % distributedServer:addServerv2(s6, [s1,s2,s3,s4,s5], {100,100}),
+  % distributedServer:addServerBetweenPeers(s5, [s1,s2,s3,s4], MaxRange),
 
-  % distributedServer:addServerv2(s7, [s1,s2,s3,s4,s5,s6], {100,100}),
+  distributedServer:addServerPartition(s5, [s1,s2,s3,s4], MaxRange),
 
   Sleep = 3000,
   Servers = [s1, s2, s3, s4],

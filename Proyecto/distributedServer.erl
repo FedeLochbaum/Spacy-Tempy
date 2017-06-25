@@ -1,5 +1,5 @@
 -module(distributedServer).
--export([start/4,stop/1,timeNow/0, addServer/3, addServerv2/3]).
+-export([start/4,stop/1,timeNow/0, addServerBetweenPeers/3, addServerPartition/3]).
 -import(rstar, [rstar/1]).
 
 start(Name, {InitialX, InitialY}, {FinalX, FinalY}, MaxRange) ->
@@ -14,7 +14,7 @@ init(Name, {InitialX, InitialY}, {FinalX, FinalY}, MaxRange) ->
       ok
   end.
 
-addServerv2(Name, Peers, MaxRange) ->
+addServerPartition(Name, Peers, MaxRange) ->
   register(Name, spawn(
         fun() ->
           Replies = getWeight(Peers),
@@ -28,7 +28,7 @@ addServerv2(Name, Peers, MaxRange) ->
           server(Name, Peers, Sig, NewRtree,  {MinX, MinY}, {MaxX, MaxY}, MaxRange)
         end)).
 
-addServer(Name, Peers, MaxRange) ->
+addServerBetweenPeers(Name, Peers, MaxRange) ->
   register(Name, spawn(
         fun() ->
           Replies = getWeight(Peers),
@@ -176,7 +176,7 @@ server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {Ma
   receive
 
     {newServer, Name} ->
-      io:format("~w New peer: ~w~n", [MyName, Peers ++ [Name]]),
+      io:format("~w New total peers: ~w~n", [MyName, Peers ++ [Name]]),
       server(MyName, Peers ++ [Name], Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY});
 
     {weight, Pid} ->
@@ -334,7 +334,16 @@ server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {Ma
       end,
       server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY});
 
+    stopPeers ->
+      F = fun(Peer) ->
+        Peer ! stop
+      end,
+
+      lists:map(F, [MyName] ++ Peers),
+      server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY});
+
     stop ->
+      io:format("Stop server: ~w~n", [MyName]),
       ok
   end.
 
