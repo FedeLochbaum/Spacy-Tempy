@@ -1,20 +1,20 @@
 -module(distributedServer).
--export([start/4,stop/1,timeNow/0, addServerBetweenPeers/3, addServerPartition/3]).
+-export([start/5,stop/1,timeNow/0, addServerBetweenPeers/4, addServerPartition/4]).
 -import(rstar, [rstar/1]).
 
-start(Name, {InitialX, InitialY}, {FinalX, FinalY}, MaxRange) ->
-  register(Name, spawn(fun() -> init(Name, {InitialX, InitialY}, {FinalX, FinalY}, MaxRange) end)).
+start(Name, {InitialX, InitialY}, {FinalX, FinalY}, MaxRange, LoadBalancing) ->
+  register(Name, spawn(fun() -> init(Name, {InitialX, InitialY}, {FinalX, FinalY}, MaxRange, LoadBalancing) end)).
 
 
-init(Name, {InitialX, InitialY}, {FinalX, FinalY}, MaxRange) ->
+init(Name, {InitialX, InitialY}, {FinalX, FinalY}, MaxRange, LoadBalancing) ->
   receive
     {peers, Peers, Next} ->
-      server(Name, Peers, Next, i3RTree:new(), {InitialX, InitialY}, {FinalX, FinalY}, MaxRange);
+      server(Name, Peers, Next, i3RTree:new(), {InitialX, InitialY}, {FinalX, FinalY}, MaxRange, {LoadBalancing, LoadBalancing});
     stop ->
       ok
   end.
 
-addServerPartition(Name, Peers, MaxRange) ->
+addServerPartition(Name, Peers, MaxRange, LoadBalancing) ->
   register(Name, spawn(
         fun() ->
           Replies = getWeight(Peers),
@@ -25,10 +25,10 @@ addServerPartition(Name, Peers, MaxRange) ->
           {NewRtree, {MinX, MinY}, {MaxX, MaxY}} = waitForRepliesv2(),
           notifyNewServer(Name, Peers),
           io:format(" Start New Serve : ~w ~w ~w ~w ~n", [Name, {MinX, MinY}, {MaxX, MaxY}, Sig]),
-          server(Name, Peers, Sig, NewRtree,  {MinX, MinY}, {MaxX, MaxY}, MaxRange)
+          server(Name, Peers, Sig, NewRtree,  {MinX, MinY}, {MaxX, MaxY}, MaxRange, {LoadBalancing, LoadBalancing})
         end)).
 
-addServerBetweenPeers(Name, Peers, MaxRange) ->
+addServerBetweenPeers(Name, Peers, MaxRange, LoadBalancing) ->
   register(Name, spawn(
         fun() ->
           Replies = getWeight(Peers),
@@ -40,7 +40,7 @@ addServerBetweenPeers(Name, Peers, MaxRange) ->
           {NewRtree, {MinX, MinY}, {MaxX, MaxY}} = waitForReplies(),
           notifyNewServer(Name, Peers),
           io:format(" Start New Serve : ~w ~w ~w ~w ~n", [Name, {MinX, MinY}, {MaxX, MaxY}, Sig]),
-          server(Name, Peers, Sig, NewRtree,  {MinX, MinY}, {MaxX, MaxY}, MaxRange)
+          server(Name, Peers, Sig, NewRtree,  {MinX, MinY}, {MaxX, MaxY}, MaxRange, {LoadBalancing, LoadBalancing})
         end)).
 
 
@@ -168,16 +168,31 @@ F = fun({Pid, Next, Weight}, {PidMax, NextMax, WeightMax}) ->
 
  {Pid, Next}.
 
-
 stop(Server) ->
 Server ! stop.
 
-server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}) ->
+sendReloadBalancingToPeers(Peers) ->
+  lists:map(fun(Peer) -> Peer ! reloadBalancing end, Peers).
+
+server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing, 0}) ->
+    spawn(fun() ->
+          sendReloadBalancingToPeers(Peers),
+          addServerPartition(list_to_atom( atom_to_list(s) ++ integer_to_list(length(Peers) + 2)) , Peers ++ [MyName], {MaxRangeX, MaxRangeY}, LoadBalancing)
+        end),
+
+    server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,LoadBalancing});
+
+
+
+server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,Count}) ->
   receive
+
+    reloadBalancing ->
+        server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,LoadBalancing});
 
     {newServer, Name} ->
       io:format("~w New total peers: ~w~n", [MyName, Peers ++ [Name]]),
-      server(MyName, Peers ++ [Name], Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY});
+      server(MyName, Peers ++ [Name], Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,Count});
 
     {weight, Pid} ->
       spawn(fun() ->  weight(I3Rtree, Pid, MyName, Next) end),
@@ -209,7 +224,7 @@ server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {Ma
           {NewFinalX, NewFinalY} = {FinalX, FinalY},
           Nnext = Next
       end,
-      server(MyName, Peers, Nnext, I3Rtree, {NewInitialX, NewInitialY}, {NewFinalX, NewFinalY}, {MaxRangeX, MaxRangeY});
+      server(MyName, Peers, Nnext, I3Rtree, {NewInitialX, NewInitialY}, {NewFinalX, NewFinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,Count});
 
     {subscribe, Pid, {X, Y}} ->
       case rangeBelong({X, Y}, {0,0}, {MaxRangeX, MaxRangeY}) of
@@ -217,26 +232,31 @@ server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {Ma
           case rangeBelong({X, Y}, {InitialX, InitialY}, {FinalX, FinalY}) of
             true ->
               NRtree = i3RTree:subscribe(Pid, {X, Y}, timeNow(), I3Rtree),
-              Pid ! ok;
+              Pid ! ok,
+              NewCount = Count -1;
             false ->
               NRtree = I3Rtree,
+              NewCount = Count,
               Next ! {subscribe, Pid, {X, Y}}
           end;
         false ->
+          NewCount = Count,
           NRtree = I3Rtree
       end,
-      server(MyName, Peers, Next, NRtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY});
+      server(MyName, Peers, Next, NRtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,NewCount});
 
     {unsubscribe, Pid} ->
       case pidBelong(Pid, I3Rtree) of
         true ->
           NRtree = i3RTree:unsubscribe(Pid, I3Rtree),
-          Pid ! ok;
+          Pid ! ok,
+          NewCount = Count -1;
         false ->
           NRtree = I3Rtree,
+          NewCount = Count,
           Next ! {unsubscribe, Pid}
       end,
-      server(MyName, Peers, Next, NRtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY});
+      server(MyName, Peers, Next, NRtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,NewCount});
 
     {move, Pid, {X, Y}} ->
       case rangeBelong({X, Y}, {0,0}, {MaxRangeX, MaxRangeY}) of
@@ -245,27 +265,32 @@ server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {Ma
             true ->
               case rangeBelong({X, Y}, {InitialX, InitialY}, {FinalX, FinalY}) of
                 true ->
+                  NewCount = Count -1,
                   NRtree = i3RTree:move(Pid, {X,Y}, timeNow(), I3Rtree);
                 false ->
                   NRtree1 = i3RTree:move(Pid, {X,Y}, timeNow(), I3Rtree),
                   NRtree = i3RTree:unsubscribe(Pid, NRtree1),
+                  NewCount = Count,
                   Next ! {move, Pid, {X, Y}}
               end;
             false ->
               case rangeBelong({X, Y}, {InitialX, InitialY}, {FinalX, FinalY}) of
                 true ->
+                  NewCount = Count -1,
                   NRtree = i3RTree:subscribe(Pid, {X, Y}, timeNow(), I3Rtree);
                 false ->
                   NRtree = I3Rtree,
+                  NewCount = Count,
                   Next ! {move, Pid, {X, Y}}
               end
           end;
         false ->
           io:format("out of bound ~n"),
+          NewCount = Count,
           NRtree = I3Rtree
       end,
       % io:format("tree: ~w~n", [NRtree]),
-      server(MyName, Peers, Next, NRtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY});
+      server(MyName, Peers, Next, NRtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,NewCount});
 
     {timelapse, Region, Instant, Sender, ReplyTo} ->
       case lists:member(Sender, Peers) of
@@ -279,7 +304,7 @@ server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {Ma
                   timelapse_query(Region, Instant, ReplyTo, I3Rtree, [], length(Peers))
                 end)
       end,
-      server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY});
+      server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,Count});
 
     {interval, Region, {Ti,Tk}, Sender, ReplyTo} ->
       case lists:member(Sender, Peers) of
@@ -293,7 +318,7 @@ server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {Ma
                   interval_query(Region, {Ti,Tk}, ReplyTo, I3Rtree, [], length(Peers))
                 end)
       end,
-      server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY});
+      server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,Count});
 
     {event, RegionMin, RegionMax, Sender, ReplyTo} ->
       case lists:member(Sender, Peers) of
@@ -307,7 +332,7 @@ server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {Ma
                   event_query(RegionMin, RegionMax, ReplyTo, I3Rtree, [], length(Peers))
                 end)
       end,
-      server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY});
+      server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,Count});
 
     {track, Pid, {Ti,Tk}, Sender, ReplyTo} ->
       case lists:member(Sender, Peers) of
@@ -321,7 +346,7 @@ server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {Ma
                   track_query(Pid, {Ti,Tk}, ReplyTo, I3Rtree, [], length(Peers))
                 end)
       end,
-      server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY});
+      server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,Count});
 
     {position, Pid, Sender, ReplyTo} ->
       case pidBelong(Pid, I3Rtree) of
@@ -332,7 +357,7 @@ server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {Ma
         false ->
           Next ! {position, Pid, Sender, ReplyTo}
       end,
-      server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY});
+      server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,Count});
 
     stopPeers ->
       F = fun(Peer) ->
@@ -340,10 +365,10 @@ server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {Ma
       end,
 
       lists:map(F, [MyName] ++ Peers),
-      server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY});
+      server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,Count});
 
     stop ->
-      io:format("Stop server: ~w~n", [MyName]),
+      io:format("Stop server ~w with Region: ~w~n", [MyName, {{InitialX, InitialY}, {FinalX, FinalY}}]),
       ok
   end.
 

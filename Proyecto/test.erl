@@ -5,21 +5,23 @@
 start(N) ->
   MaxRange = {100,100},
 
-  distributedServer:start(s1, {0,0}, {50,50}, MaxRange),
-  distributedServer:start(s2, {0,50}, {50,100}, MaxRange),
-  distributedServer:start(s3, {50,50}, {100,100}, MaxRange ),
-  distributedServer:start(s4, {50,0}, {100,50}, MaxRange),
+  LoadBalancing = 1000, % count of responses before at balancing
+
+  distributedServer:start(s1, {0,0}, {50,50}, MaxRange, LoadBalancing),
+  distributedServer:start(s2, {0,50}, {50,100}, MaxRange, LoadBalancing),
+  distributedServer:start(s3, {50,50}, {100,100}, MaxRange, LoadBalancing),
+  distributedServer:start(s4, {50,0}, {100,50}, MaxRange, LoadBalancing),
   s1 ! {peers, [s2,s3,s4], s2},
   s2 ! {peers, [s3,s4,s1], s3},
   s3 ! {peers, [s4,s1,s2], s4},
   s4 ! {peers, [s1,s2,s3], s1},
 
 
-  % distributedServer:addServerBetweenPeers(s5, [s1,s2,s3,s4], MaxRange),
+  % distributedServer:addServerBetweenPeers(s5, [s1,s2,s3,s4], MaxRange, LoadBalancing),
 
-  distributedServer:addServerPartition(s5, [s1,s2,s3,s4], MaxRange),
+  % distributedServer:addServerPartition(s5, [s1,s2,s3,s4], MaxRange, LoadBalancing),
 
-  Sleep = 3000,
+  Sleep = 5000,
   Servers = [s1, s2, s3, s4],
   generateNodes(N, Servers, Sleep, MaxRange).
   % generateQueries(server,N, Sleep),
