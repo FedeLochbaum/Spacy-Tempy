@@ -16,10 +16,21 @@ start(N) ->
   s3 ! {peers, [s4,s1,s2], s4},
   s4 ! {peers, [s1,s2,s3], s1},
 
+  manager:start(manager1), % cada uno de estos se crearan en otro nodo
+  manager1 ! {servers, [s1]},
 
-  % distributedServer:addServerBetweenPeers(s5, [s1,s2,s3,s4], MaxRange, LoadBalancing),
+  manager:start(manager2),
+  manager2 ! {servers, [s2,s3]},
 
-  % distributedServer:addServerPartition(s5, [s1,s2,s3,s4], MaxRange, LoadBalancing),
+  manager:start(manager3),
+  manager3 ! {servers, [s4]},
+
+  manager1 ! {managers, [manager2,manager3]},
+  manager2 ! {managers, [manager1,manager3]},
+  manager3 ! {managers, [manager1,manager2]},
+
+  manager:newManager(manager4, [manager1,manager2,manager3]),   % en otro nodo, deberia contestarle alguien y darle un server.
+
 
   Sleep = 5000,
   Servers = [s1, s2, s3, s4],

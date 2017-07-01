@@ -18,7 +18,7 @@ addServerPartition(Name, Peers, MaxRange, LoadBalancing) ->
   register(Name, spawn(
         fun() ->
           Replies = getWeight(Peers),
-          {S,Sig} = maxWeight(Replies),
+          {S,Sig, _} = maxWeight(Replies),
           io:format("Selected Servers are ~w~n", [S]),
           sendOk(lists:subtract(Peers, [S])),
           S ! {myPrevious, self(), Name},
@@ -32,7 +32,7 @@ addServerBetweenPeers(Name, Peers, MaxRange, LoadBalancing) ->
   register(Name, spawn(
         fun() ->
           Replies = getWeight(Peers),
-          {S,Sig} = maxWeight(Replies),
+          {S,Sig, _} = maxWeight(Replies),
           io:format("Selected Servers are ~w~n", [{S,Sig}]),
           sendOk(lists:subtract(Peers, [S,Sig])),
           S ! {myPrevious, self(), Name},
@@ -166,7 +166,7 @@ F = fun({Pid, Next, Weight}, {PidMax, NextMax, WeightMax}) ->
   end,
  {Pid, Next, Weight} = lists:foldl(F, {0,0,0}, Replies),
 
- {Pid, Next}.
+ {Pid, Next, Weight}.
 
 stop(Server) ->
 Server ! stop.
@@ -186,6 +186,13 @@ server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {Ma
 
 server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,Count}) ->
   receive
+
+    partition ->
+      server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,0});
+
+    {state, Name} ->
+      Name ! {state, {MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,LoadBalancing}}},
+      server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,Count});
 
     reloadBalancing ->
         server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,LoadBalancing});
