@@ -11,15 +11,19 @@ initNewManager(Name, Managers) ->
   Manager = lists:nth(rand:uniform(length(Managers)), Managers), % selecciono un manager random
   Manager ! {newManager, Name},
   receive
-    {yourNewServer, Pid, {NameServer, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,LoadBalancing}}} ->  % aca deberiamos pasarle todo lo que tiene la funcion server (obviamente con su estado)
+    {yourNewServer, Pid, {NameServer, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,LoadBalancing}}, Peers} ->  % aca deberiamos pasarle todo lo que tiene la funcion server (obviamente con su estado)
       createNewServer(NameServer, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,LoadBalancing}), % asumo que aca podre ver el nombre del server.
-      Pid ! ok,
-      manager(Name, [Server], Managers)
+      lists:map(fun(Peer) -> Peer ! ok end, Peers),
+      manager(Name, [NameServer], Managers)
   end.
 
 
 createNewServer(NameServer, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,LoadBalancing}) ->
-  % falta levantar este server en esta pc. (con todo este estado)
+io:format("Selected Server is ~w~n", [{NameServer, Peers, Next, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,LoadBalancing}}]),
+register(NameServer,
+            spawn(fun() ->
+              distributedServer:server(NameServer, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,LoadBalancing})
+            end)).  % falta levantar este server en esta pc. (con todo este estado)
 
 
 
@@ -29,7 +33,7 @@ initManager(Name) ->
       waitForPeers(Name, Servers)
   end.
 
-waitForPeers(RangeMin, RangeMax, Servers) ->
+waitForPeers(Name, Servers) ->
   receive
     {managers, Managers} ->
       manager(Name, Servers, Managers)
@@ -69,14 +73,15 @@ manager(Name, Servers, Managers) ->
     {newManager, NewManager} ->
       spawn(
             fun() ->
-              Replies = getWeight(Peers ++ [Name]),
+              Replies = getWeight(Managers ++ [Name]),
               {Manager, Server, Weight} = maxWeight(Replies),
               Manager ! {getServer, Server, NewManager}
       end),
       manager(Name, Servers, Managers);
 
     {weight, Pid} ->
-      distributedServer:getWeight(Servers),
+      Replies = distributedServer:getWeight(Servers),
+      lists:map(fun(S) -> S ! ok end, Servers),
       {S,_, Weight} = distributedServer:maxWeight(Replies),
       Pid ! {weightResult, Name, S, Weight},
       manager(Name, Servers, Managers);
@@ -92,11 +97,15 @@ manager(Name, Servers, Managers) ->
 
       receive
         {state, State} ->
-          NewManager ! {yourNewServer, Name, State},
-          receive
-            ok ->
-              Server ! stop,
-              manager(Name, lists:subtract(Servers, [Server]), Managers)
+          Server ! {stopServerForClone, Name},
+           receive
+             {ok, Peers} ->
+               timer:sleep(2000),
+               Server ! stop,
+               NewManager ! {yourNewServer, Name, State, Peers},
+               manager(Name, lists:subtract(Servers, [Server]), Managers)
+          %     Server ! stop,
+          %     manager(Name, lists:subtract(Servers, [Server]), Managers)
           end
       end
 

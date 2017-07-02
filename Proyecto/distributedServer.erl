@@ -1,5 +1,5 @@
 -module(distributedServer).
--export([start/5,stop/1,timeNow/0, addServerBetweenPeers/4, addServerPartition/4]).
+-export([start/5,stop/1,timeNow/0, addServerBetweenPeers/4, addServerPartition/4, getWeight/1, maxWeight/1, server/8]).
 -import(rstar, [rstar/1]).
 
 start(Name, {InitialX, InitialY}, {FinalX, FinalY}, MaxRange, LoadBalancing) ->
@@ -185,17 +185,18 @@ server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {Ma
 
 
 server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,Count}) ->
+  % io:format("server : ~w~n", [MyName]),
   receive
-
-    partition ->
-      server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,0});
 
     {state, Name} ->
       Name ! {state, {MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,LoadBalancing}}},
       server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,Count});
 
     reloadBalancing ->
-        server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,LoadBalancing});
+      server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,LoadBalancing});
+
+    partition ->
+      server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,0});
 
     {newServer, Name} ->
       io:format("~w New total peers: ~w~n", [MyName, Peers ++ [Name]]),
@@ -373,6 +374,18 @@ server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {Ma
 
       lists:map(F, [MyName] ++ Peers),
       server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,Count});
+
+    {stopServerForClone, Name} ->
+      lists:map(fun(Peer) -> Peer ! {pause, MyName} end, Peers),
+      Name ! {ok, Peers},
+      server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,Count});
+
+    {pause, Aname} ->
+
+      receive
+        ok ->
+          server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,Count})
+      end;
 
     stop ->
       io:format("Stop server ~w with Region: ~w~n", [MyName, {{InitialX, InitialY}, {FinalX, FinalY}}]),

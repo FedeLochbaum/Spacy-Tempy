@@ -29,14 +29,16 @@ start(N) ->
   manager2 ! {managers, [manager1,manager3]},
   manager3 ! {managers, [manager1,manager2]},
 
-  manager:newManager(manager4, [manager1,manager2,manager3]),   % en otro nodo, deberia contestarle alguien y darle un server.
 
+  % timer:apply_after(1000, manager, newManager, [manager4, [manager1,manager2,manager3]]),
 
-  Sleep = 5000,
+  Sleep = 1000,
   Servers = [s1, s2, s3, s4],
-  generateNodes(N, Servers, Sleep, MaxRange).
+  generateNodes(N, Servers, Sleep, MaxRange),
   % generateQueries(server,N, Sleep),
   % stop(N).
+  timer:sleep(2000),
+  manager:newManager(manager4, [manager1,manager2,manager3]).   % en otro nodo, deberia contestarle alguien y darle un server.
 
 
 generateNodes(0,_,_,_) ->
