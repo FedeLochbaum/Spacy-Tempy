@@ -24,7 +24,7 @@ io:format("Selected Server is ~w~n", [{NameServer, Peers, Next, {InitialX, Initi
 register(NameServer,
             spawn(fun() ->
               distributedServer:server(NameServer, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,LoadBalancing})
-            end)).  % falta levantar este server en esta pc. (con todo este estado)
+            end)).
 
 
 
@@ -72,8 +72,11 @@ F = fun({Manager, Server, Weight}, {ManagerMax, ServerMax, WeightMax}) ->
 
 manager(Name, Servers, Managers, {Observable, StateMonitor, Monitor}, TimeLapse, Observer) ->
   receive
+    {newObserver, MyNewObserver} ->
+      manager(Name, Servers, Managers, {Observable, StateMonitor, Monitor}, TimeLapse, MyNewObserver);
+
     {updateState, States} ->
-      manager(Name, Servers, Managers, {Observable, States, Monitor}, TimeLapse, Observer);
+      manager(Name, Servers, Managers, {Observable, StateMonitor, Monitor}, TimeLapse, Observer);
 
     {newManager, NewManager} ->
       spawn(
@@ -113,12 +116,19 @@ manager(Name, Servers, Managers, {Observable, StateMonitor, Monitor}, TimeLapse,
           end
       end;
     {'DOWN', Monitor, process, Object, Info} ->
-          io:format("~w died; ~w~n", [Object, Info]),
-          manager(Name, Servers, Managers, {Observable, StateMonitor, Monitor}, TimeLapse, Observer)
+          {{ObservableOfObservable, StateMonitorOfObservable, MonitorOfObservable}, StatesServersObservable } = StateMonitor,
+          demonitor(Monitor),
+          demonitor(MonitorOfObservable), % por si acaso.
+          NewMonitor = monitor(process, ObservableOfObservable),
+          ObservableOfObservable ! {newObserver, Name},
+          % levantar los servers y agregarlos a mi lista de servers
+          NamesServer = createsServersOfStates(StatesServersObservable),
+
+          manager(Name, Servers ++ NamesServer, Managers, {ObservableOfObservable, StateMonitorOfObservable, NewMonitor}, TimeLapse, Observer)
     after
       TimeLapse ->
         StatesServers = getStates(Name, Servers),
-        Observer ! {updateState, StatesServers},
+        Observer ! {updateState, {{Observable, StateMonitor, Monitor} ,StatesServers}},
         manager(Name, Servers, Managers, {Observable, StateMonitor, Monitor}, TimeLapse, Observer)
 
   end.
@@ -137,3 +147,12 @@ receiveStates(N, States) ->
     {state, State} ->
       receiveStates(N-1, States ++ [State])
   end.
+
+
+createsServersOfStates(StatesServersObservable) ->
+  F = fun({NameServer, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,LoadBalancing}}, Current) ->
+        createNewServer(NameServer, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,LoadBalancing}),
+        Current ++ NameServer
+      end,
+  NameServers = lists:foldl(F, [], StatesServersObservable),
+  NameServers.
