@@ -16,14 +16,14 @@ start(N) ->
   s3 ! {peers, [s4,s1,s2], s4},
   s4 ! {peers, [s1,s2,s3], s1},
 
-  manager:start(manager1), % cada uno de estos se crearan en otro nodo
-  manager1 ! {servers, [s1]},
+  manager:start(manager1),
+  manager1 ! {servers, [s1], s2},
 
   manager:start(manager2),
-  manager2 ! {servers, [s2,s3]},
-
+  manager2 ! {servers, [s2,s3], s3},
+  
   manager:start(manager3),
-  manager3 ! {servers, [s4]},
+  manager3 ! {servers, [s4], s1},
 
   manager1 ! {managers, [manager2,manager3]},
   manager2 ! {managers, [manager1,manager3]},
