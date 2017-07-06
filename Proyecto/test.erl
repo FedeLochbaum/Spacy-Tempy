@@ -7,6 +7,8 @@ start(N) ->
 
   LoadBalancing = 1000, % count of responses before at balancing
 
+  TimeLapse = 2000,
+
   distributedServer:start(s1, {0,0}, {50,50}, MaxRange, LoadBalancing),
   distributedServer:start(s2, {0,50}, {50,100}, MaxRange, LoadBalancing),
   distributedServer:start(s3, {50,50}, {100,100}, MaxRange, LoadBalancing),
@@ -16,13 +18,13 @@ start(N) ->
   s3 ! {peers, [s4,s1,s2], s4},
   s4 ! {peers, [s1,s2,s3], s1},
 
-  manager:start(manager1),
+  manager:start(manager1, TimeLapse),
   manager1 ! {servers, [s1], s2},
 
-  manager:start(manager2),
+  manager:start(manager2, TimeLapse),
   manager2 ! {servers, [s2,s3], s3},
-  
-  manager:start(manager3),
+
+  manager:start(manager3, TimeLapse),
   manager3 ! {servers, [s4], s1},
 
   manager1 ! {managers, [manager2,manager3]},
@@ -38,7 +40,7 @@ start(N) ->
   % generateQueries(server,N, Sleep),
   % stop(N).
   timer:sleep(2000),
-  manager:newManager(manager4, [manager1,manager2,manager3]).   % en otro nodo, deberia contestarle alguien y darle un server.
+  manager:newManager(manager4, [manager1,manager2,manager3], TimeLapse).   % en otro nodo, deberia contestarle alguien y darle un server.
 
 
 generateNodes(0,_,_,_) ->
