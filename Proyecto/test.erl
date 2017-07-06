@@ -19,17 +19,17 @@ start(N) ->
   s4 ! {peers, [s1,s2,s3], s1},
 
   manager:start(manager1, TimeLapse),
-  manager1 ! {servers, [s1], s2},
+  manager1 ! {servers, [s1]},
 
   manager:start(manager2, TimeLapse),
-  manager2 ! {servers, [s2,s3], s3},
+  manager2 ! {servers, [s2,s3]},
 
   manager:start(manager3, TimeLapse),
-  manager3 ! {servers, [s4], s1},
+  manager3 ! {servers, [s4]},
 
-  manager1 ! {managers, [manager2,manager3]},
-  manager2 ! {managers, [manager1,manager3]},
-  manager3 ! {managers, [manager1,manager2]},
+  manager1 ! {managers, [manager2,manager3], {monitors, manager2, manager3}},
+  manager2 ! {managers, [manager1,manager3], {monitors, manager3, manager1}},
+  manager3 ! {managers, [manager1,manager2], {monitors, manager1, manager2}},
 
 
   % timer:apply_after(1000, manager, newManager, [manager4, [manager1,manager2,manager3]]),

@@ -15,7 +15,7 @@ initNewManager(Name, Managers, TimeLapse) ->
       createNewServer(NameServer, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,LoadBalancing}), % asumo que aca podre ver el nombre del server.
       Monitor = monitor(process, ToMonitor),
       lists:map(fun(Peer) -> Peer ! ok end, Peers),
-      manager(Name, [NameServer], Managers, {ToMonitor, StateMonitor, Monitor}, TimeLapse)
+      manager(Name, [NameServer], Managers, {ToMonitor, StateMonitor, Monitor}, TimeLapse, Pid)
   end.
 
 
@@ -36,9 +36,9 @@ initManager(Name, TimeLapse) ->
 
 waitForPeers(Name, Servers, TimeLapse) ->
   receive
-    {managers, Managers, ToMonitor} ->
-      Monitor = monitor(process, ToMonitor),
-      manager(Name, Servers, Managers, {ToMonitor, 0 ,Monitor}, TimeLapse)
+    {managers, Managers,  {monitors, Observable, Observer}} -> % obsever = a mi, observable, a quien observo yo
+      Monitor = monitor(process, Observable),
+      manager(Name, Servers, Managers, {Observable, 0 ,Monitor}, TimeLapse, Observer)
   end.
 
 getWeight(Peers) ->
@@ -70,8 +70,11 @@ F = fun({Manager, Server, Weight}, {ManagerMax, ServerMax, WeightMax}) ->
  lists:foldl(F, {0,0,0}, Replies).
 
 
-manager(Name, Servers, Managers, {ToMonitor, StateMonitor, Monitor}, TimeLapse) ->
+manager(Name, Servers, Managers, {Observable, StateMonitor, Monitor}, TimeLapse, Observer) ->
   receive
+    {updateState, States} ->
+      manager(Name, Servers, Managers, {Observable, States, Monitor}, TimeLapse, Observer);
+
     {newManager, NewManager} ->
       spawn(
             fun() ->
@@ -79,14 +82,14 @@ manager(Name, Servers, Managers, {ToMonitor, StateMonitor, Monitor}, TimeLapse) 
               {Manager, Server, Weight} = maxWeight(Replies),
               Manager ! {getServer, Server, NewManager}
       end),
-      manager(Name, Servers, Managers, {ToMonitor, StateMonitor, Monitor}, TimeLapse);
+      manager(Name, Servers, Managers, {Observable, StateMonitor, Monitor}, TimeLapse, Observer);
 
     {weight, Pid} ->
       Replies = distributedServer:getWeight(Servers),
       lists:map(fun(S) -> S ! ok end, Servers),
       {S,_, Weight} = distributedServer:maxWeight(Replies),
       Pid ! {weightResult, Name, S, Weight},
-      manager(Name, Servers, Managers, {ToMonitor, StateMonitor, Monitor}, TimeLapse);
+      manager(Name, Servers, Managers, {Observable, StateMonitor, Monitor}, TimeLapse, Observer);
 
     {getServer, Server, NewManager} ->
       case length(Servers) > 1 of
@@ -105,12 +108,32 @@ manager(Name, Servers, Managers, {ToMonitor, StateMonitor, Monitor}, TimeLapse) 
                timer:sleep(2000),
                Server ! stop,
                demonitor(Monitor),
-               NewManager ! {yourNewServer, Name, State, Peers, {ToMonitor, StateMonitor}},
-               manager(Name, lists:subtract(Servers, [Server]), Managers, {NewManager, 0 ,monitor(process, NewManager)}, TimeLapse)
+               NewManager ! {yourNewServer, Name, State, Peers, {Observable, StateMonitor}},
+               manager(Name, lists:subtract(Servers, [Server]), Managers, {NewManager, 0 ,monitor(process, NewManager)}, TimeLapse, Observer)
           end
       end;
     {'DOWN', Monitor, process, Object, Info} ->
           io:format("~w died; ~w~n", [Object, Info]),
-          manager(Name, Servers, Managers, {ToMonitor, StateMonitor, Monitor}, TimeLapse)
+          manager(Name, Servers, Managers, {Observable, StateMonitor, Monitor}, TimeLapse, Observer)
+    after
+      TimeLapse ->
+        StatesServers = getStates(Name, Servers),
+        Observer ! {updateState, StatesServers},
+        manager(Name, Servers, Managers, {Observable, StateMonitor, Monitor}, TimeLapse, Observer)
 
+  end.
+
+
+
+getStates(Name, Servers) ->
+  lists:map(fun(S) -> S ! {state, Name} end, Servers),
+  receiveStates(length(Servers), []).
+
+receiveStates(0, States) ->
+  States;
+
+receiveStates(N, States) ->
+  receive
+    {state, State} ->
+      receiveStates(N-1, States ++ [State])
   end.
