@@ -1,8 +1,8 @@
 # Spacy-Tempy una Base de datos espacio-temporal distribuida
 
-####Propuesta: [Propuesta de trabajo final](/Propuesta.md)
+#### Propuesta: [Propuesta de trabajo final](/Propuesta.md)
 
-##Introducción
+## Introducción
 
 En este proyecto se decidió Implementar una base de datos espacio temporal, utilizando una tipo de datos abstracto propuesto por el paper ["I+3 R-Tree: un método de acceso espacio-temporal"](http://sedici.unlp.edu.ar/bitstream/handle/10915/21205/Documento_completo.pdf?sequence=1) llamado I3Rtree capaz de almacenar información espacial  de aquellos nodos que se van moviendo en el espacio-tiempo. Permitiendo así, resolver consultas sobre posición, trayectoria, estadía y puntos por donde se irán moviendo estos últimos en una región determinada.
 Además se incorporo los conceptos aprendidos en esta materia sobre manejo de información de manera distribuida entre diferentes nodos/computadoras, disminuyendo la carga total en cada uno de los servidores.
@@ -11,7 +11,7 @@ Se implemento a menor escalar la tarea de distribución de carga entre diferente
 
 Entraremos en mas detalle sobre los conceptos tratados en este proyecto, contando los detalles de la implementación a medida que avance el documento.
 
-##I+3 R-Tree: un método de acceso espacio-temporal
+## I+3 R-Tree: un método de acceso espacio-temporal
 Como se menciono anteriormente, la idea central de nuestro proyecto se basa en la propuesta de este paper, el cual desarrolla una nueva estructura de datos  llamada I+3 R-Tree.
 I+3 R-Tree es una estructura de datos que surge de convinar un [Rtree](https://es.wikipedia.org/wiki/%C3%81rbol-R), una [LinkedList](https://en.wikipedia.org/wiki/Linked_list) y un [Map](https://jarroba.com/map-en-java-con-ejemplos/) capaces de almacenar la información  pasada y presente de todos aquellos nodos dentro de una región cualquiera.
 A continuación se explicara brevemente porque es necesaria cada una de ellas y cuales son sus ventajas/desventajas.
@@ -42,16 +42,16 @@ Las consultas espacio temporal que permiten esta implementación son:
 
 Si bien el paper explica como llevar a cabo estas consultas, no creemos necesario entrar en detalle sobre como se resuleven de manera eficiente la busqueda de informacion espacio-temporal. Aun asi, para observar el costo de las mismas se puede ver la siguiente cita, la cual compara su eficiencia con el anteriormente mencionado 2+3 R-Tree:
 
-####Consulta Timeslice:
+#### Consulta Timeslice:
 Ambas estructuras se comportan en este caso de mane
 ra similar, siendo un poco mas alto  el  costo  de  consulta  en  el  2+3  R-Tree  debido  a los  accesos  a  disco  extras
 necesarios para obtener las posiciones actuales de
 los objetos.  
 
-####Consulta Intervalo
+#### Consulta Intervalo
 Resulta altamente similar a la eficiencia del 2+3  R-Tree.
 
-####Consulta Eventos
+#### Consulta Eventos
 Es un subconjunto de Timeslice, el cual contiene so
 lamente los objetos que ingresan o
 salen  de  la  región  de  consulta  en  el  instante  de  ti
@@ -60,7 +60,7 @@ evaluación  experimental  realizada  para  la  consulta
 de  Timeslice  es  valida  también
 para la consulta de tipo Eventos.
 
-####Consultas de Trayectoria
+#### Consultas de Trayectoria
 Para poder comparar el desempeño de la consulta de
 trayectoria se realizó un análisis
 de costo de búsqueda para las dos estructuras, tant
@@ -70,10 +70,10 @@ que  el  2+3  R-Tree  no  posee  un
 método para resolver la trayectoria.
 
 
-####Consulta Posicion Actual
+#### Consulta Posicion Actual
 Como el I+3 R-Tree utiliza un Map con el ultimo movimiento de cada nodo, el orden de la respuesta de esta consulta es el orden provisto por la busqueda del Map.
 
-###Implementación
+### Implementación
 Nuestra implementación del I+3 R-Tree, consiste en una tupla de 3 elementos {3DRtree, Map, LinkedList}, la cual en conjunto almacena la información espacio-temporal de todos los nodos dentro de una región limitada. Un I+3 R-Tree en principio no tiene limites de espacio para manejar información espacial. Además permite a una entidad, subscribir se, desubscribirse del I+3 R-Tree y así mantener solo la información pasada de este. Permite resolver los cinco tipos de consultas espacio-temporal propuestos anteriormente manteniendo todos los invariantes de representación necesarios para que estas sean eficientes como dice el paper.
 
 El principal problema que tuvo nuestro grupo de trabajo fue el encontrarse sin ningún apoyo de implementación por parte del paper, por lo cual recurrimos a la minuciosa lectura de los invariantes de representación y propiedades de la estructura de datos para diseñar una implementación propia. A pesar de esto, pudimos encontrar una implementación de Rtree publica en erlang que finalmente utilizamos para simplificar notablemente el tiempo dedicado a representar el I+3 R-Tree.
