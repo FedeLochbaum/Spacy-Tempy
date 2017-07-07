@@ -83,6 +83,20 @@ Analizando un poco  uso central el proyecto, pensamos algunas alternativas para 
 
 
 ### Arquitectura distribuida
+Una vez definidos los principales problemas a atacar, diseñamos una arquitectura especifica para el manejo de los servidores distribuidos.
+
+Decimos utilizar una arquitectura de anillo entre los servidores para delegar la responsabilidad de estos a la hora de procesar un request de un cliente, por ejemplo, si se movió de un servidor a otro (lo cual es transparente para el cliente), donde esto genera una desubscripcion de uno de los servers y una subscripción en otro.
+Otra ventaja que provee esta arquitectura es que no importa a que servidor se este haciendo la consulta, si el servidor al que le llega el request se da cuenta que no debe encargarse de tal pedido, este delegara a su siguiente la responsabilidad y continuara trabajando.
+
+Entonces, un servidor sera un proceso que puede estar corriendo, tanto en el mismo nodo local que sus pares como en diferentes, registrándose con un nombre único. Este servidor en principio tendrá un rango mínimo y máximo ({Xmin, Ymin}, {Xmax, Ymax}) del cual se encarga de procesar request de los clientes y además, conocer el rango rango físico máximo que es capaz de responder la red de servidores. Una vez creado este servidor esperara a que le notifiquen que servidores serán sus pares a la hora de procesar requests espacio-temporales y el servidor siguiente al mismo, como mencionamos anteriormente estaremos utilizando una arquitectura de anillo para simplificar notablemente el handleo de request entre servidores. Para concretar la idea, un servidor distribuido se encargara de procesar requests de una región física limitada, conocera a sus pares y además, conocera a su siguiente, entonces, cada uno de los servidores (que pueden estar corriendo en diferentes computadoras) tendrá un  I+3 R-Tree almacenando la información de esa región.
+
+Es necesario que cada servidor conozca a cada uno de sus pares por varios motivos, uno de ellos es que, como ahora cada servidor se encargara de almacenar la información espacial de un rango limitado, para resolver las consultas espacio-temporales se requiere de la respuesta de los otros servidores, veamos un ejemplo de esto. Si un cliente hace una consulta pidiendo saber cual fue su recorrido desde un instante Ti a otro Tk, vemos que un solo servidor ahora, no es suficiente para responderle a tal cliente ya que solo conoce parte de la respuesta. Vemos tambien que es necesario almacenar la respuesta de todos sus servidores pares, ordenarlas y enviarle la respuesta final a cliente. Este es el punto mas interesante para aplicar la concurrencia en nuestro proyecto, sabemos que realizar una consulta, puede ser costosa en términos de tiempo y que además, no puede lockear temporalmente a los servidores, por lo tanto para realizar el procesamiento de consultas espacio-temporales utilizamos concurrencia todo el tiempo. Para que esto quede claro, en la siguiente sección mostraremos un ejemplo visual y se explicara mas detalladamente.
+
+Otro motivo por el cual es necesario que cada uno de los servidores conozca a todos sus pares es que, para realizar algunas tareas que requieren consenso (que se detallaran mas adelante) como por ejemplo el balanceo de carga, control de fallos, entre otros.
+
+Vale aclarar que, hacer que todos los servidores se conozcan entre si, abre un abanico de posibilidades para crear nueva funcionalidad que necesite gran distribución de carga.
+
+
 
 ### Manejo de Consultas distribuidas
 
