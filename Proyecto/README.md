@@ -101,8 +101,9 @@ Vale aclarar que, hacer que todos los servidores se conozcan entre si, abre un a
 ![](distributedServers.jpg)
 
 ### Manejo de Consultas distribuidas
+Anteriormente contamos que  nuestros servidores pueden responder 5 tipos de consultas espacio-temporales. TimeLapse, consulta encargada de de encontrar todos los nodos presentes en una región en un instante único I, de Intervalo capaz de encontrar todos los nodos presentes en una región dentro de un intervalo de tiempo , de Trayectoria capaz de encontrar el camino realizado por un nodo en desde un tiempo i hasta un tiempo k , de  Evento capaz de encontrar todos aquellos nodos que pasaron por una región física R y Posición actual capaz de saber donde esta actualmente un nodo. Como dijimos, ahora que nuestros servidores solo se encargan de procesar información de un fragmento del mapa total encontramos varios problemas, a continuación contaremos cuales de estas consultas generaron inconvenientes y como se solucionaron.
 
-<!-- ACA ME GUSTARIA PONER UN EJEMPLO VISUAL DE RESPUESTA DE CONSULTAS -->
+#### TimeLapse
 
 
 ### Balanceo automatico de carga local
