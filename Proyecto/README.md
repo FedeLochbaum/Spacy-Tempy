@@ -1,6 +1,7 @@
 # Spacy-Tempy una Base de datos espacio-temporal distribuida
 
-#### Propuesta: [Propuesta de trabajo final](/Propuesta.md)
+#### Propuesta: [Propuesta de trabajo final](Propuesta.md)
+
 
 ## Introducción
 
@@ -57,7 +58,7 @@ Para poder comparar el desempeño de la consulta de trayectoria se realizó un a
 #### Consulta Posicion Actual
 Como el I+3 R-Tree utiliza un Map manteniendo el ultimo movimiento de cada nodo, el orden de la respuesta de esta consulta es el orden provisto por la busqueda del Map.
 
-### Implementación
+### Implementación del I+3 R-Tree
 Nuestra implementación del I+3 R-Tree, consiste en una tupla de 3 elementos {3DRtree, Map, LinkedList}, la cual en conjunto almacena la información espacio-temporal de todos los nodos dentro de una región limitada. Un I+3 R-Tree en principio no tiene limites de espacio para manejar información espacial. Además permite a una entidad, subscribir se, desubscribirse del I+3 R-Tree y así mantener solo la información pasada de este. Permite resolver los cinco tipos de consultas espacio-temporal propuestos anteriormente manteniendo todos los invariantes de representación necesarios para que estas sean eficientes como dice el paper.
 
 El principal problema que tuvo nuestro grupo de trabajo fue el encontrarse sin ningún apoyo de implementación por parte del paper, por lo cual recurrimos a la minuciosa lectura de los invariantes de representación y propiedades de la estructura de datos para diseñar una implementación propia. A pesar de esto, pudimos encontrar una implementación de Rtree publica en erlang que finalmente utilizamos para simplificar notablemente el tiempo dedicado a representar el I+3 R-Tree.
@@ -97,8 +98,12 @@ Otro motivo por el cual es necesario que cada uno de los servidores conozca a to
 Vale aclarar que, hacer que todos los servidores se conozcan entre si, abre un abanico de posibilidades para crear nueva funcionalidad que necesite gran distribución de carga.
 
 
+![](distributedServers.jpg)
 
 ### Manejo de Consultas distribuidas
+
+<!-- ACA ME GUSTARIA PONER UN EJEMPLO VISUAL DE RESPUESTA DE CONSULTAS -->
+
 
 ### Balanceo automatico de carga local
 
