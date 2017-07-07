@@ -4,20 +4,20 @@
 
 ## Introducción
 
-En este proyecto se decidió Implementar una base de datos espacio temporal, utilizando una tipo de datos abstracto propuesto por el paper ["I+3 R-Tree: un método de acceso espacio-temporal"](http://sedici.unlp.edu.ar/bitstream/handle/10915/21205/Documento_completo.pdf?sequence=1) llamado I3Rtree capaz de almacenar información espacial  de aquellos nodos que se van moviendo en el espacio-tiempo. Permitiendo así, resolver consultas sobre posición, trayectoria, estadía y puntos por donde se irán moviendo estos últimos en una región determinada.
+En este proyecto se decidió Implementar una base de datos espacio temporal, utilizando una tipo de datos abstracto propuesto por el paper ["I+3 R-Tree: un método de acceso espacio-temporal"](http://sedici.unlp.edu.ar/bitstream/handle/10915/21205/Documento_completo.pdf?sequence=1) llamado I3Rtree capaz de almacenar información espacial  de aquellos nodos que se van moviendo en el espacio-tiempo. Permitiendo así, resolver consultas sobre posición, trayectoria, estadía y puntos por donde se irán moviendo en una región determinada.
 Además se incorporo los conceptos aprendidos en esta materia sobre manejo de información de manera distribuida entre diferentes nodos/computadoras, disminuyendo la carga total en cada uno de los servidores.
 
-Se implemento a menor escalar la tarea de distribución de carga entre diferentes servidores como así la idea de agregar dinámicamente nuevas computadoras a la red del proyecto. Finalmente permitimos a nuestra red tener tolerancia a fallos, en cuales la red resiste a la caída de diferentes computadoras dentro de la red.  
+Se implemento a menor escalar la tarea de distribución de carga entre diferentes servidores como así la idea de agregar dinámicamente nuevas computadoras a la red del proyecto. Finalmente permitimos a nuestra red de servidores tener tolerancia a fallos, donde los servidores toleran  la baja de las diferentes computadoras dentro de la red distribuida.  
 
-Entraremos en mas detalle sobre los conceptos tratados en este proyecto, contando los detalles de la implementación a medida que avance el documento.
+Entraremos en mas detalle sobre los conceptos tratados en este proyecto, contando los detalles de implementación a medida que avance el documento.
 
 ## I+3 R-Tree: un método de acceso espacio-temporal
 Como se menciono anteriormente, la idea central de nuestro proyecto se basa en la propuesta de este paper, el cual desarrolla una nueva estructura de datos  llamada I+3 R-Tree.
-I+3 R-Tree es una estructura de datos que surge de convinar un [Rtree](https://es.wikipedia.org/wiki/%C3%81rbol-R), una [LinkedList](https://en.wikipedia.org/wiki/Linked_list) y un [Map](https://jarroba.com/map-en-java-con-ejemplos/) capaces de almacenar la información  pasada y presente de todos aquellos nodos dentro de una región cualquiera.
+I+3 R-Tree es una estructura de datos que surge de combinar un [Rtree](https://es.wikipedia.org/wiki/%C3%81rbol-R) de tres dimensiones (dimension x, dimension y e tiempo), una [LinkedList](https://en.wikipedia.org/wiki/Linked_list) y un [Map](https://jarroba.com/map-en-java-con-ejemplos/) capaces de almacenar la información  pasada y presente de todos aquellos nodos dentro de una región cualquiera a lo largo del tiempo.
 A continuación se explicara brevemente porque es necesaria cada una de ellas y cuales son sus ventajas/desventajas.
 
 ### Rtree
-El I+3 R-Tree utiliza un Rtree de 3 dimensiones para almacenar toda la información pasada de los nodos que se movieron dentro de un espacio físico.
+El I+3 R-Tree utiliza un Rtree de 3 dimensiones para almacenar toda la información pasada de los nodos que se movieron dentro de un espacio físico e informacion adicional como, cuanto tiempo han permanecido en ese punto antes de moverse.
 
 ### LinkedList
 El I+3 R-Tree utiliza una LinkedList, enlazando los últimos movimientos de todos los nodos. Es necesario mantener este invariante de representación para hacer de manera eficiente la resolución de consultas espacio-temporales.
@@ -25,12 +25,11 @@ El I+3 R-Tree utiliza una LinkedList, enlazando los últimos movimientos de todo
 ### Map
 El I+3 R-Tree utiliza un Map de longitud N (donde N es la cantidad de nodos moviéndose dentro de la región), el cual permite almacenar toda la información presente de los nodos en una región.
 
-El paper continua explicando de manera detallada cual es la diferencia entre este [TAD](https://en.wikipedia.org/wiki/Abstract_data_type) y 2+3 R
--Tree. Comenta que este ultimo solo puede resolver 2 tipos de consultas espacio-temporales y que, el I3Rtree puede resolver hasta 5 consultas.
+El paper continua explicando de manera detallada cual es la diferencia entre este [TAD](https://en.wikipedia.org/wiki/Abstract_data_type) y 2+3 R-Tree. Comenta que este ultimo solo puede resolver 2 tipos de consultas espacio-temporales y que, el I3Rtree puede resolver hasta 5 consultas.
 
 Las consultas espacio temporal que permiten esta implementación son:
 
- * Identificar todos los nodos que están presentes en una región R en un instante I.
+ * Identificar todos los nodos que están presentes en una región R en un instante de tiempo I.
 
  * Identificar todos los nodos de una región R en un intervalo de tiempo [ti; tk].
 
@@ -43,35 +42,20 @@ Las consultas espacio temporal que permiten esta implementación son:
 Si bien el paper explica como llevar a cabo estas consultas, no creemos necesario entrar en detalle sobre como se resuleven de manera eficiente la busqueda de informacion espacio-temporal. Aun asi, para observar el costo de las mismas se puede ver la siguiente cita, la cual compara su eficiencia con el anteriormente mencionado 2+3 R-Tree:
 
 #### Consulta Timeslice:
-Ambas estructuras se comportan en este caso de mane
-ra similar, siendo un poco mas alto  el  costo  de  consulta  en  el  2+3  R-Tree  debido  a los  accesos  a  disco  extras
-necesarios para obtener las posiciones actuales de
-los objetos.  
+Ambas estructuras se comportan en este caso de manera similar, siendo un poco mas alto  el  costo  de  consulta  en  el  2+3  R-Tree  debido  a los  accesos  a  disco  extras necesarios para obtener las posiciones actuales de los objetos.  
 
 #### Consulta Intervalo
 Resulta altamente similar a la eficiencia del 2+3  R-Tree.
 
 #### Consulta Eventos
-Es un subconjunto de Timeslice, el cual contiene so
-lamente los objetos que ingresan o
-salen  de  la  región  de  consulta  en  el  instante  de  ti
-empo  dado.  Por  esta  razón,  la
-evaluación  experimental  realizada  para  la  consulta
-de  Timeslice  es  valida  también
-para la consulta de tipo Eventos.
+Es un subconjunto de Timeslice, el cual contiene solamente los objetos que ingresan o salen  de  la  región  de  consulta  en  el  instante de  tiempo  dado.  Por  esta  razón,  la evaluación  experimental  realizada  para  la  consulta de  Timeslice  es  valida  también para la consulta de tipo Eventos.
 
 #### Consultas de Trayectoria
-Para poder comparar el desempeño de la consulta de
-trayectoria se realizó un análisis
-de costo de búsqueda para las dos estructuras, tant
-o el I+3 R-Tree como para el 2+3
-R-Tree.  Este  análisis  de  costo  se  realizó  debido  a
-que  el  2+3  R-Tree  no  posee  un
-método para resolver la trayectoria.
+Para poder comparar el desempeño de la consulta de trayectoria se realizó un análisis de costo de búsqueda para las dos estructuras, tanto el I+3 R-Tree como para el 2+3R-Tree.  Este  análisis  de  costo  se  realizó  debido  a que  el  2+3  R-Tree  no  posee  un método para resolver la trayectoria.
 
 
 #### Consulta Posicion Actual
-Como el I+3 R-Tree utiliza un Map con el ultimo movimiento de cada nodo, el orden de la respuesta de esta consulta es el orden provisto por la busqueda del Map.
+Como el I+3 R-Tree utiliza un Map manteniendo el ultimo movimiento de cada nodo, el orden de la respuesta de esta consulta es el orden provisto por la busqueda del Map.
 
 ### Implementación
 Nuestra implementación del I+3 R-Tree, consiste en una tupla de 3 elementos {3DRtree, Map, LinkedList}, la cual en conjunto almacena la información espacio-temporal de todos los nodos dentro de una región limitada. Un I+3 R-Tree en principio no tiene limites de espacio para manejar información espacial. Además permite a una entidad, subscribir se, desubscribirse del I+3 R-Tree y así mantener solo la información pasada de este. Permite resolver los cinco tipos de consultas espacio-temporal propuestos anteriormente manteniendo todos los invariantes de representación necesarios para que estas sean eficientes como dice el paper.
@@ -85,12 +69,18 @@ Nuevamente, no vale la pena entrar en detalles de implementación en este docume
 ## Servidor de base de datos secuencial utilizando I+3 R-Tree
 Una vez implementada la base de datos dimensional y definida su interfaz, se decidió implementar un servidor secuencial capaz de utilizar la misma para proveer respuestas a clientes en tiempo real. Este servidor fue la primer versión que vio el proyecto, capaz de atender request de subscripción, desubscripcion y movimiento de  nodos a través del tiempo. También, capaz de respoder las cinco consultas espacio-temporal de manera concurrente.
 
-En principio, como el servidor es secuencial decidimos que solo tenga un I+3 R-Tree el cual contenga toda la información de todos los nodos, sin limite de espacio. Esta misma se ira actualizando a medida que el server vaya respondiendo sus request a aquellas entidades  subscritas. Una vez que el servidor deja de estar subscrito, aunque este envié request de movimiento al servidor, el servidor no hará que su I+3 R-Tree handlee el pedido.
+En principio, como el servidor es secuencial decidimos que solo tenga un I+3 R-Tree el cual contenga toda la información de todos los nodos, sin limite de espacio. Esta misma se ira actualizando a medida que el server vaya respondiendo sus request a aquellas entidades  subscritas. Una vez que el nodo deja de estar subscrito, aunque este envié request de movimiento al servidor, el servidor no hará que su I+3 R-Tree handlee el pedido.
 
 Como el objetivo de esta implementación era la de realizar una pequeña prueba de uso dinámico del I+3 R-Tree (la cual fue muy satisfactoria), fue claramente descartada para dar paso a su versión mejorada, un servidor completamente distribuido.
 
 
 ## Servidor distribuido utilizando I+3 R-Tree
+Luego de implementar una primera versión del servidor utilizando un I+3 R-Tree, descubrimos algunas limitaciones y propiedades que debíamos tener en cuenta para esta nueva versión. Además, buscamos simplificar notablemente la interfaz provista por el server hacia sus clientes, permitiendo solo hacer request de movimiento y consultas entre el/los servidores y la entidad en movimiento. Como el objetivo del proyecto es de crear una base de datos distribuida generalizable, decimos abstraernos totalmente de algún dominio de uso especifico.
+
+Vimos que el mejor camino a simplificar la tarea de capturar request de entidades en movimiento dentro de una región era la de mantener no solo un servidor, sino poder tener muchos capaces de resolver los pedidos del cliente. Esta misma idea, nos genero varias preguntas interesantes como ¿ Cuantos servidores tener ? ¿ Como dividir los servidores ? ¿ Quien se encarga de responderle al cliente ? entre muchas otras. Optamos por diseñar los servidores de tal manera que trabajen en conjunto, independientemente de la cantidad de ellos. Algo interesante de mencionar, que se hará referencia cuando se explique la arquitectura de los mismos, es la de, no solo mantener distribución continua entre los servidores, sino también concurrencia en las tareas mas complejas.
+
+Analizando un poco  uso central el proyecto, pensamos algunas alternativas para respoder las preguntas mencionadas y llegamos a la conclusión en que, por un lado, los servidores deben poder manejarse de manera transparente a la cantidad total de pares que tengan, por otro lado, nos encontramos en el dilema de como dividir la responsabilidad de cada servidor. Una de ellas es la que, un servidor se encargara de un conjunto finito de clientes, reduciendo altamente la carga de otros servidores. La otra opción es la que, un servidor se encargara de recibir request de todos los clientes que se estén moviendo en una región especifica y así, distribuir en mayor medida la carga entre todos servidores, ya que cada servidor se ocupara de una única región física.
+
 
 ### Arquitectura distribuida
 
