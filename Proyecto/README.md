@@ -66,7 +66,7 @@ Como tarea bonus, se implemento la opción de partir un I+3 R-Tree en dos subár
 
 Nuevamente, no vale la pena entrar en detalles de implementación en este documento ya que si bien esta parte es muy necesaria, no es la mas interesante para resaltar en este informe.
 
-## Servidor de base de datos secuencial utilizando I+3 R-Tree
+## Servidor secuencial utilizando I+3 R-Tree
 Una vez implementada la base de datos dimensional y definida su interfaz, se decidió implementar un servidor secuencial capaz de utilizar la misma para proveer respuestas a clientes en tiempo real. Este servidor fue la primer versión que vio el proyecto, capaz de atender request de subscripción, desubscripcion y movimiento de  nodos a través del tiempo. También, capaz de respoder las cinco consultas espacio-temporal de manera concurrente.
 
 En principio, como el servidor es secuencial decidimos que solo tenga un I+3 R-Tree el cual contenga toda la información de todos los nodos, sin limite de espacio. Esta misma se ira actualizando a medida que el server vaya respondiendo sus request a aquellas entidades  subscritas. Una vez que el nodo deja de estar subscrito, aunque este envié request de movimiento al servidor, el servidor no hará que su I+3 R-Tree handlee el pedido.
