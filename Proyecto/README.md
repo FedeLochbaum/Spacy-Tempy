@@ -103,8 +103,26 @@ Vale aclarar que, hacer que todos los servidores se conozcan entre si, abre un a
 ### Manejo de Consultas distribuidas
 Anteriormente contamos que  nuestros servidores pueden responder 5 tipos de consultas espacio-temporales. TimeLapse, consulta encargada de de encontrar todos los nodos presentes en una región en un instante único I, de Intervalo capaz de encontrar todos los nodos presentes en una región dentro de un intervalo de tiempo , de Trayectoria capaz de encontrar el camino realizado por un nodo en desde un tiempo i hasta un tiempo k , de  Evento capaz de encontrar todos aquellos nodos que pasaron por una región física R y Posición actual capaz de saber donde esta actualmente un nodo. Como dijimos, ahora que nuestros servidores solo se encargan de procesar información de un fragmento del mapa total encontramos varios problemas, a continuación contaremos cuales de estas consultas generaron inconvenientes y como se solucionaron.
 
-#### TimeLapse
 
+Para un mejor entendimiento supongamos que tenemos cuatro servidores cada uno encargado de una region fisica, identico al ejemplo de la seccion anterior.
+
+#### TimeLapse
+Como bien sabemos, un cliente puede realizar una consulta o un request de movimiento a cualquier server dentro de la red de servidores, en este caso, vemos que la mayor dificultad con respecto a nuestra arquitectura es la de buscar al servidor responsable de realiar la consulta.
+
+#### Intervalo
+En este caso, es un ejemplo bastante similar al anteriormente descripto, por lo tanto no provee un nivel de dificultad mayor al mismo.
+
+#### Trayectoria
+Quizá el mas interesante a contar, esta query realmente necesita de la respuesta de cada uno de los servidores por los que paso un nodo a lo largo del tiempo, además, no solo es necesario combinar la respuestas de los diferentes servers, sino que esta respuesta final debe estar ordenada a través del tiempo.
+
+#### Evento
+Una región definida en una query puede necesitar que mas de un server deba contestarle al cliente, por lo tanto, estos se comunican y combinan sus respuestas para finalmente enviársela al interesado.
+
+#### Posición actual
+Sin mas complejidad que las dos primeras, se sabe que un nodo no puede estar en dos servidores y menos en dos espacios físicos al mismo tiempo. Por lo cual solo es necesario encontrar al servidor responsable y este se encargara de comunicarle la respuesta al cliente.
+
+
+Vale recordar que como estos request no necesitan estar totalmente sincronizados se utilizo la concurrencia para lanzar nuevos procesos encargados de procesar y consensuar las respuestas. Además, es interesante destacar que, dependiendo que decisiones tomes en el diseño de la arquitectura simplifica o complejiza notablemente las tareas a resolver. 
 
 ### Balanceo automatico de carga local
 
