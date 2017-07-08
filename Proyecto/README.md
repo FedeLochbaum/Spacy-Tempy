@@ -138,6 +138,9 @@ Previamente contamos que los servidores podrían estar corriendo en una misma co
 
 Como en el titulo anterior se hizo mención del funcionamiento del balanceo de carga, no vimos de interés entrar mas en detalle.
 
+
+![](balancingServers.jpg)
+
 ## Managers
 
 ### Arquitectura
