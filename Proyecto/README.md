@@ -122,14 +122,21 @@ Una región definida en una query puede necesitar que mas de un server deba cont
 Sin mas complejidad que las dos primeras, se sabe que un nodo no puede estar en dos servidores y menos en dos espacios físicos al mismo tiempo. Por lo cual solo es necesario encontrar al servidor responsable y este se encargara de comunicarle la respuesta al cliente.
 
 
-Vale recordar que como estos request no necesitan estar totalmente sincronizados se utilizo la concurrencia para lanzar nuevos procesos encargados de procesar y consensuar las respuestas. Además, es interesante destacar que, dependiendo que decisiones tomes en el diseño de la arquitectura simplifica o complejiza notablemente las tareas a resolver. 
+Vale recordar que como estos request no necesitan estar totalmente sincronizados se utilizo la concurrencia para lanzar nuevos procesos encargados de procesar y consensuar las respuestas. Además, es interesante destacar que, dependiendo que decisiones tomes en el diseño de la arquitectura simplifica o complejiza notablemente las tareas a resolver.
 
 ### Balanceo automatico de carga local
+Para hacer mas inteligentes a nuestros servidores decidimos implementar la idea de balanceo automatico de carga. En principio esta idea no es nada trivial y existen muchos metodos para llevarlo a cabo, aun así explicaremos brevemente como resolvimos los problemas y como se llevo a cabo.
+
+Previo a la implementación nos hicimos varias preguntas frente a esta problemática, como por ejemplo, ¿ Como sabemos cuando balancear ? ¿ Hacemos alguna cuenta dinámica ? ¿ Consensuamos entre los diferentes servidores para balancear ? ¿ Permitimos que todos balanceen o solo el de mayor carga ? entre muchas otras, aun así optamos por algunas respuestas un poco simplificadas, decidimos darle a cada uno de los servers una carga máxima que puede soportar y que esta carga se ira restando hasta llegar a 0. Cuando un servidor llega a su limite de carga les exige a cada uno de sus pares que vuelva a contar desde el inicio y este mismo genera una partición de su región. Es sencillo entender porque se implemento así, solo el servidor con mas carga hasta el momento sera aquel capaz de particionarse.
+
+Como cada servidor tiene un rango mínimo y un rango máximo el cual utiliza para saber cuales request debe resolver y cuales no, particionar un servidor se vuelve sencillo, creamos un nuevo server encargado de gestionar la mitad exacta de la región del servidor inicial y este ultimo actualiza su nueva región. De todas formas, no es tan trivial la implementación, recordar que cada servidor debe conocer a todos sus pares y a su siguiente, por lo tanto es necesario mantener estos invariantes una vez particionados. Ya que ahora, el nuevo server debe conocer a su siguiente que puede ser el servidor inicial o aquel que apuntaba este ultimo. Finalmente una vez creado el nuevo server este envía un aviso a cada uno de los servidores de la red, notifiandoles que existe un nuevo servidor par.
+
+Si bien esta implementación es factible y funciona correctamente en nuestra red de servidores, nada garantiza que dos servidores no puedan particionarse al mismo tiempo antes que llegue el aviso de reconteo. Por lo tanto, en este punto es necesario un algoritmo de exclusión mutua para garantizar que solo un servidor pueda balancearse. Notar que si dos servidores se particionan al mismo tiempo, alguno de los invariantes de la arquitectura podrían perderse.
 
 ### Adicion de nuevos servidores "On the fly"
+Previamente contamos que los servidores podrían estar corriendo en una misma computadora o en diferentes, por lo tanto es de gran interés para el proyecto permitir crear nuevos servidores "On the fly" para balancear la carga total de la red  existente. Para llevar a cabo esto decidimos que este nuevo servidor se comunique con cada uno de los actualmente corriendo, pidiendoles su carga total. Una vez obtenida la carga total de cada uno de los servidores, elige al servidor con la mayor carga y le exige que se particione, una vez particionado este server le brinda al nuevo una mitad del servidor y este finalmente entrando a la red de servidores como un par.
 
-### Utilizando nodos Erlang
-
+Como en el titulo anterior se hizo mención del funcionamiento del balanceo de carga, no vimos de interés entrar mas en detalle.
 
 ## Managers
 
