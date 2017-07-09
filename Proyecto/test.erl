@@ -36,7 +36,7 @@ start(N) ->
 
   Sleep = 1000,
   Servers = [s1, s2, s3, s4],
-  generateNodes(N, Servers, Sleep, MaxRange),
+  % generateNodes(N, Servers, Sleep, MaxRange),
   % generateQueries(server,N, Sleep),
   % stop(N).
   timer:sleep(2000),
