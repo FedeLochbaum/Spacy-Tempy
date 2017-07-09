@@ -197,4 +197,6 @@ Cuando explicamos el balanceo automatico local de los servidores distribuidos co
 
 ## Conclusion
 
-### Transparencia para el usuario
+Como consunción de este proyecto, el grupo de trabajo esta muy contento con los logros cometidos, por un lado, tenemos la  base de datos espacio-temporal, la cual fue un reto muy grande para nosotros por su complejidad y falta de ayuda por parte del paper. Además fue interesante mezclar algunas estructuras de datos para representar una de mayor magnitud y poder tanto, guardar movimientos en el plano como resolver consultas espacio-temporales. Por otro lado, la lógica de la red de servidores, no fue nada trivial. Nos encontramos con muchos problemas de implementación que fuimos solucionando a medida que realizábamos pruebas sobre la misma. Combinar concurrencia, consistencia de datos y distribución de carga, balanceo de carga y control de fallos fueron los conceptos mas interesantes a tratar en la resolución del mismo proyecto por lo que estamos muy contentos de haberlo finalizad con éxito.
+
+Como resultado final pudimos implementar una base de datos espacio-temporal distribuida y generalizable a cualquier tipo de ámbito. Tranquilamente podría ser adaptada, por ejemplo para la utilizacion de estadísticas automovilistas, podríamos identificar zonas de mayor trafico como zonas de mayor peligro accidental o buscar el mejor recorrido hecho por los clientes, entre otras posibilidades.
