@@ -151,6 +151,7 @@ Por lo tanto, ahora el Mánager sera nuestra representación del funcionamiento 
 
 
 ### Adicion de nuevos managers "On the fly"
+Cada mánager ahora, estará corriendo en computadoras distintas en conjunto con sus servers y el trabajo se esta haciendo de manera distribuida entre todos los nodos. ¿ Pero que sucede si queremos agregar un nuevo nodo a nuestra red ? ya sea porque podemos costear una nueva computadora o simplemente porque vimos la necesidad de redistribuir la carga de mensajes entre mas computadoras. Aprovechando el balanceo de carga local que se da de manera automática entre los servidores y el balanceo manual. Vimos que era posible una vez se crea un nuevo nodo avisarles a cada uno de los managers en la red que consensúen la llegada de un nuevo par. Cuando estos managers son notificados, les envían un mensaje a cada uno de sus servidores, consultandoles su carga. Acto seguido cada mánager le envía a un encargado (un proceso aparte) la carga total que posee en ese momento, este encargado verificara que mánager es el de mayor carga y le avisara que debe brindarle el servidor mas pesado al nuevo par. Cuando el mánager es notificado, verifica que la cantidad de servers que posee sea mayor a uno, en este caso le brinda el estado del server con mayor carga al nuevo nodo para que este comience su funcionamiento. En caso contrario, si el mánager solo posee un servidor, le dirá a este ultimo que se balancee y finalmente le brindara una de sus mitades al nuevo mánager. 
 
 ### Control de fallos
 
