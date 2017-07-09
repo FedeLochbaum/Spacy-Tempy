@@ -142,8 +142,13 @@ Como en el titulo anterior se hizo mención del funcionamiento del balanceo de c
 ![](balancingServers.jpg)
 
 ## Managers
+Anteriormente hicimos referencia sobre la manera en que funcionan nuestros servidores, contamos que cada uno de ellos puede estar trabajando en computadoras diferentes donde, se irán comunicando mediante su nombre de proceso registrado delengandose la tarea de responder un request. Pero esto mismo nos llevo a hacernos algunas preguntas como ¿ Si se quiere agregar una nueva computadora a la red de Servers que se necesita hacer ? ¿ Como sabemos cuantos servers corren en un mismo nodo ? ¿ Que sucede si una computadora deja de función ? . Como se puede ver podríamos tener muchos servidores en diferentes nodos y estas preguntas generan ciertas problemáticas a resolver dentro de este contexto. Por lo tanto, decidimos implementar la idea de Manager, un modulo capaz de lanzar procesos encargados de gestionar todos los servidores dentro de un nodo. Ya sea para reasignar nuevos servidores, para poner en funcionamiento nuevos nodos, para tolerancia a fallos o balanceo de carga entre computadoras.
 
 ### Arquitectura
+Por lo tanto, ahora el Mánager sera nuestra representación del funcionamiento de nuestro nodo. El mánager conocera a cada uno de sus servidores (los que están corriendo en su computadora) y en caso de ser necesario este se comunicara con ellos para recurrir a información. Sin embargo para todos los servidores, la existencia de este mánager es transparente. Ya que los request de los clientes se seguirán haciendo hacia los servidores, independientemente de donde estén, el funcionamiento del mánager no afectara de ninguna manera a estos últimos. Entonces, ahora los mánager también se conocerán entre si e irán comunicando se para manejar asuntos que exceden al comportamiento de los servers.
+
+![](distributedManagers.jpg)
+
 
 ### Adicion de nuevos managers "On the fly"
 
