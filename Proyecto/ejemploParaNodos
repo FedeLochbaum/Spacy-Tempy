@@ -5,9 +5,9 @@ Node2: erl -sname ser2 -setcookie prueba
 Node3: erl -sname ser3 -setcookie prueba
 ---------------------------------------
 
-Node1: distributedServer:start(s1, {0,50}, {50,100}, {100,100}, 1000).
+Node1: distributedServer:start(s1, {0,0}, {50,50}, {100,100}, 1000).
 
-Node2: distributedServer:start(s2, {50,100}, {100,50}, {100,100}, 1000).
+Node2: distributedServer:start(s2, {0,50}, {50,100}, {100,100}, 1000).
 
 Node2: distributedServer:start(s3, {50,50}, {100,100}, {100,100}, 1000).
 

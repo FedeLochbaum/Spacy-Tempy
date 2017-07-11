@@ -244,6 +244,7 @@ server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {Ma
           case rangeBelong({X, Y}, {InitialX, InitialY}, {FinalX, FinalY}) of
             true ->
               NRtree = i3RTree:subscribe(Pid, {X, Y}, timeNow(), I3Rtree),
+              io:format("subscribe : ~w~n", [Pid]),
               Pid ! ok,
               NewCount = Count -1;
             false ->

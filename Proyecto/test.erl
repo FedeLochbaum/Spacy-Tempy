@@ -101,3 +101,52 @@ sendQuery(Server, Name, 4) ->
   Tk = rand:uniform(server:timeNow()),
   Ti = rand:uniform(server:timeNow()),
   Server ! {track, Name, {min(Ti,Tk),max(Ti,Tk)}, self()}.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+% distributedServer:start(s1, {0,0}, {50,50}, {100,100}, 1000),
+% distributedServer:start(s2, {0,50}, {50,100}, {100,100}, 1000),
+% distributedServer:start(s3, {50,50}, {100,100}, {100,100}, 1000),
+% distributedServer:start(s4, {50,0}, {100,50}, {100,100}, 1000),
+% s1 ! {peers, [s2,s3,s4], s2},
+% s2 ! {peers, [s3,s4,s1], s3},
+% s3 ! {peers, [s4,s1,s2], s4},
+% s4 ! {peers, [s1,s2,s3], s1},
