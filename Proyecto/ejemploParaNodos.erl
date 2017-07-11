@@ -46,4 +46,4 @@ Node3: manager3 ! {managers, [{manager1, ser1@QueBuenServer}, {manager2, ser2@Qu
 Luego para probar la adicion de nuevos managers:
 
 Node4: erl -sname ser4 -setcookie prueba
-Node4: manager:newManager(manager4, [{manager1, ser1@QueBuenServer}, {manager2, ser2@QueBuenServer}, {manager3, ser3@QueBuenServer}], 2000).
+Node4: manager:newManager({manager4, ser4@QueBuenServer}, [{manager1, ser1@QueBuenServer}, {manager2, ser2@QueBuenServer}, {manager3, ser3@QueBuenServer}], 2000).
