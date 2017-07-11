@@ -185,7 +185,7 @@ server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {Ma
 
 
 server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,Count}) ->
-  % io:format("server : ~w~n", [MyName]),
+  io:format("server : ~w~n", [MyName]),
   receive
 
     {peers, Pid} ->
@@ -393,7 +393,11 @@ server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {Ma
 
     stop ->
       io:format("Stop server ~w with Region: ~w~n", [MyName, {{InitialX, InitialY}, {FinalX, FinalY}}]),
-      ok
+      ok;
+
+    Other ->
+      io:format("Other: ~w~n", [Other]),
+      server(MyName, Peers, Next, I3Rtree, {InitialX, InitialY}, {FinalX, FinalY}, {MaxRangeX, MaxRangeY}, {LoadBalancing,Count})
   end.
 
 
