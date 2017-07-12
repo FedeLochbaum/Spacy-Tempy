@@ -1,11 +1,14 @@
 -module(manager).
--export([start/2, newManager/3]).
+-export([start/2, newManager/3, newManager/4]).
 
 start(Name, TimeLapse) ->
   register(Name, spawn(fun() -> initManager(Name, TimeLapse) end)).
 
 newManager(Name, Managers, TimeLapse) ->
   register(Name, spawn(fun() -> initNewManager(Name, Managers, TimeLapse) end)).
+
+newManager(Name, From, Managers, TimeLapse) ->
+  register(Name, spawn(fun() -> initNewManager({Name,From}, Managers, TimeLapse) end)).
 
 initNewManager(Name, Managers, TimeLapse) ->
   Manager = lists:nth(rand:uniform(length(Managers)), Managers), % selecciono un manager random

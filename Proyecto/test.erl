@@ -1,5 +1,5 @@
 -module(test).
--export([start/1,stop/1]).
+-export([start/1,stop/1,generateNodes/4]).
 
 
 start(N) ->
@@ -36,11 +36,12 @@ start(N) ->
 
   Sleep = 1000,
   Servers = [s1, s2, s3, s4],
-  % generateNodes(N, Servers, Sleep, MaxRange),
+  %generateNodes(N, Servers, Sleep, MaxRange),
   % generateQueries(server,N, Sleep),
   % stop(N).
   timer:sleep(2000),
-  manager:newManager(manager4, [manager1,manager2,manager3], TimeLapse).   % en otro nodo, deberia contestarle alguien y darle un server.
+  bench:start(N, Servers, Sleep, MaxRange, 30000).
+  %manager:newManager(manager4, [manager1,manager2,manager3], TimeLapse).   % en otro nodo, deberia contestarle alguien y darle un server.
 
 
 generateNodes(0,_,_,_) ->
@@ -49,6 +50,7 @@ generateNodes(0,_,_,_) ->
 generateNodes(N, Servers, Sleep, {Xmax, Ymax}) ->
   Name = list_to_atom("node" ++ integer_to_list(N)),
   Server = lists:nth(rand:uniform(length(Servers)), Servers),
+  %node:start(Name, ser4@ubuntu, Server, Sleep, {Xmax, Ymax}),
   node:start(Name, Server, Sleep, {Xmax, Ymax}),
   generateNodes(N-1, Servers, Sleep, {Xmax, Ymax}).
 

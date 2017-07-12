@@ -36,6 +36,7 @@ generateNodes({N, M}, Servers, Sleep, {Xmax, Ymax}, MaxTime) ->
   Name = list_to_atom("node" ++ integer_to_list(N)),
   Server = lists:nth(rand:uniform(length(Servers)), Servers),
   node:start(Name, Server, Sleep, {Xmax, Ymax}),
+  %node:start(Name,ser4@ubuntu, Server, Sleep, {Xmax, Ymax}),
   generateNodes({N-1, M}, Servers, Sleep, {Xmax, Ymax}, MaxTime).
 
 

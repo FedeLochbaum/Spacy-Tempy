@@ -1,5 +1,8 @@
 -module(node).
--export([start/4, stop/1]).
+-export([start/4, start/5, stop/1]).
+
+start(Name, From, Server, Sleep, {Xmax, Ymax}) ->
+  register(Name, spawn_link(fun() -> init({Name,From}, Server, Sleep, {Xmax, Ymax}) end)).
 
 start(Name, Server, Sleep, {Xmax, Ymax}) ->
   register(Name, spawn_link(fun() -> init(Name, Server, Sleep, {Xmax, Ymax}) end)).
