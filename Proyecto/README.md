@@ -174,12 +174,42 @@ Una vez definido quien sera el responsable de monitorear a cada uno de los manag
 
 ## Pruebas
 
+A la hora de realizar las pruebas decidimos hacerlas primero sobre un único nodo local y luego sobre una red de computadoras distribuidas para analizar y verificar cuan grande es la diferencia de carga y performance de los nodos.
+
+Como en cada prueba, tanto local como distribuida, podemos ver que los cliente hacen su petición al servidor mostrando la misma en pantalla. El servidor al recibir su petición verifica si ese nodo se encuentra en su rango, en caso de que no se lo asigna a su servidor siguiente hasta que el servidor encargado conteste la petición. En las pruebas locales esto es fácil de identificar ya que todo se ejecuta sobre una misma máquina o mejor dicho sobre un mismo nodo, es decir,  no hay un delay en el paso de información. La eficiencia en esta prueba solo está limitado a la memoria de la máquina.
+
+Además, probamos ejecutar la misma prueba sobre una máquina virtual, donde se nota un menor desempeño debido a la memoria y proceso que tiene asignado, no supera los 10000 clientes realizando peticiones a los servidores, después de 15 segundos empieza a notarse un cambio drástico y sobrepasa la memoria por la cantidad de información que se maneja.
+
+En otro caso, realizamos la prueba en una red de 4 servidores distribuidos, creando 2 nodos, en el cual cada nodo posee 2 servidores. También agregamos otro nodo donde se ejecutó el test (bench) el cual levanta diversos clientes los cuales hacen peticiones a los servidores, cuando el cliente hace la petición a su servidor sabe en que nodo está y así poder efectuar de manera correcta la solicitud, de la misma manera el servidor sabe en que nodo se encuentra su cliente suscrito. De esta forma podemos observar de manera mas sencilla que ocurre internamente en cada servidor, como así también, se observa como se van creando nuevos servidores, como se particionan y cuando sus clientes hacen las request.
+
 ### Bench
+
+Como dijimos recientemente, con el bench secuencial tenemos 4 servidores, todos se ejecutan en un nodo con 1000 clientes, sleep de 1000 milisegundos y con el laps de tiempo de 30000 milisegundos, los resultados de realizar este bench son los siguientes:
+
+>Total servers: [s4,s1,s2,s5,s6,s3]
+>Total Weights: [{s2,s3,1},{s3,s4,1},{s4,s1,1},{s1,s5,2},{s5,s6,384}]
+>Max Weight: {s5,s6,384}
+>TotalRequests: 3.0e4
+
+Por la cantidad de solicitudes y la carga generada con los request, se crearon 3 servidores nuevos para poder manejar una mejor eficiencia en la respuestas de los servidores a los clientes, además vemos que los servidores que tuvieron más carga fueron el servidor 1 y 6. Las peticiones son pocas debido a la cantidad de clientes y al tiempo en el que se ejecutó el bench, el número de request es correcto ya que hay 100 clientes, se mueven cada 1 segundo en un tiempo de 30 segundos (1000*1*30 = 30000), por lo tanto en este caso aseguramos una consistencia de 100% de respuestas por parte de los servidores. Como se dijo anteriormente en este bench se nota un alto desempeño debido a que todo se ejecuta sobre un nodo.
+
+
+Por otro lado, se ejecutó el bench con la red de servidores distribuidos, al igual como se mencionó en el apartado anterior, tenemos 4 servidores que se encuentran en nodos distintos, 2 servidores en cada nodo de diferentes máquinas. Se dieron de parámetros 2000 clientes, donde se están moviendo cada 1000 milisegundos, en un lapso de tiempo de 20000 milisegundos. Los resultados que arroja son los siguiente:
+
+>Peers: [{s1,'ser1@192.168.0.16'},{s2,'ser1@192.168.0.16'},{s3,'ser2@192.168.0.10'},{s4,'ser2@192.168.0.10'}]
+>Total servers: [{s1,'ser1@192.168.0.16'},{s2,'ser1@192.168.0.16'},{s3,'ser2@192.168.0.10'},{s4,'ser2@192.168.0.10'},{s5,'ser1@192.168.0.16'}]
+>Total Weights: [{{s3,'ser2@192.168.0.10'},{s4,'ser2@192.168.0.10'},1},{{s4,'ser2@192.168.0.10'},{s1,'ser1@192.168.0.16'},1},{{s2,'ser1@192.168.0.16'},{s3,'ser2@192.168.0.10'},1},{{s1,'ser1@192.168.0.16'},{s5,'ser1@192.168.0.16'},998}]
+>Max Weight: {{s1,'ser1@192.168.0.16'},{s5,'ser1@192.168.0.16'},998}
+>TotalRequests: 4.0e4
+
+Vemos que se creó 1 server más por las solicitudes de los clientes, además de observar que el servidor 1 y 5 fueron los que tuvieron más peticiones en el lapso de tiempo indicado. Para ser pocos nodos no hubo una gran cantidad de peticiones, pero a diferencia de las pruebas de manera secuencial se observa que si hay una gran diferencia, al realizar 1000 clientes de manera secuencial la máquina empieza a desempeñar menos y de manera distribuida se ejecuta más fluido, hay más memoria para trabajar y mayor procesamiento.
+El trabajar con el sistema distribuido hace el trabajo en conjunto, tenemos una mayor confiabilidad y disponibilidad, ya que si un servidor falla no afecta a los demás ya que existe una tolerancia a fallos. El sistema tiene una capacidad de crecimiento incremental, se puede añadir capacidad de procesamiento, incrementando su potencia de forma gradual según las necesidades. Existe una respuesta rápida de los servidores, hay concurrencia al compartir recursos por parte de los clientes, se cuenta con transparencia en la replicación, frente a fallos, al ser escalable, de acceso, de movilidad, etc. Se logra notar un mejor desempeño al estar trabajando de forma distribuida.
 
 ### Limites
 
-### Estadisticas Locales vs Distribuida
+Al estar ejecutándose secuencialmente sabemos que todo el RTree está en la máquina, las peticiones que se hacen a los servidores se realizan de forma inmediata, no hay una restricción en cuánto a transferencia de datos de una máquina a otra y no existe un delay como tal. El límite que se observa en cualquier sistema es la memoria de la máquina donde están los servidores.
 
+Cuando se realiza un sistema distribuido sabemos que tiene sus desventajas trabajar con estos como por ejemplo la implantación, también sabemos que este sistema se trabaja sobre una red de comunicación en la cuál puede haber saturación de tráfico, pérdida de mensajes; no es muy habitual que fallen pero puede suceder. Sin embargo el uso de un sistema de manera distribuida genera grandes ventajas.
 
 ## Trabajo Futuro
 
